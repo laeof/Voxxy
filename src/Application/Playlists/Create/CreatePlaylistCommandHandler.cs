@@ -32,16 +32,13 @@ internal sealed class CreatePlaylistCommandHandler(
 
         var playlistId = Guid.NewGuid();
 
-        var playlist = new Playlist
-        {
-            Id = playlistId,
-            CreatedBy = userContext.UserId,
-            Name = command.Name,
-            CreatedAt = dateTimeProvider.UtcNow,
-            Color = PlaylistConstants.DefaultPlaylistColor,
-            ImageUrl = assetsOptions.Value.ImageLogicUrl.Replace("{id}", playlistId.ToString()),
-            Type = (int)PlaylistType.Playlist,
-        };
+        var playlist = Playlist.Create(
+            playlistId,
+            userContext.UserId,
+            command.Name,
+            dateTimeProvider,
+            assetsOptions.Value.ImageLogicUrl.Replace("{id}", playlistId.ToString()),
+            (int)PlaylistType.Playlist);
 
         context.Playlists.Add(playlist);
 

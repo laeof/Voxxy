@@ -24,16 +24,14 @@ internal sealed class RegisterUserCommandHandler(
 
         var userId = Guid.NewGuid();
 
-        var user = new User
-        {
-            Id = userId,
-            Email = command.Email,
-            FirstName = command.FirstName,
-            LastName = command.LastName,
-            PasswordHash = passwordHasher.Hash(command.Password),
-            CreatedAt = DateTime.UtcNow,
-            ImageUrl = assetsOptions.Value.ImageLogicUrl.Replace("{id}", userId.ToString()),
-        };
+        var user = User.Create(
+            userId,
+            command.Email,
+            command.FirstName,
+            command.LastName,
+            passwordHasher.Hash(command.Password),
+            assetsOptions.Value.ImageLogicUrl.Replace("{id}", userId.ToString()),
+            DateTime.UtcNow);
 
         user.Raise(new UserRegisteredDomainEvent(user.Id));
 

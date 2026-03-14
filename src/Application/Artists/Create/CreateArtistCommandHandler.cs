@@ -30,15 +30,12 @@ internal sealed class CreateArtistCommandHandler(
 
         var artistId = Guid.NewGuid();
 
-        var artist = new Artist
-        {
-            Id = artistId,
-            UserId = command.UserId,
-            Name = command.Name,
-            CreatedAt = dateTimeProvider.UtcNow,
-            ImageUrl = defaultAssets.Value.ImageLogicUrl.Replace("{id}", artistId.ToString()),
-            CreatedByUserId = userContext.UserId,
-        };
+        var artist = Artist.Create(
+            command.UserId,
+            command.Name,
+            defaultAssets.Value.ImageLogicUrl.Replace("{id}", artistId.ToString()),
+            dateTimeProvider.UtcNow,
+            userContext.UserId);
 
         context.Artists.Add(artist);
 

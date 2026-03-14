@@ -14,7 +14,7 @@ public sealed class Playlist : Entity, IPlaylist
     public string Name { get; set; }
     public int Type { get; set; }
     public string Color { get; set; }
-    public string ImageUrl { get; set; }
+    public string ImageKey { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public Guid CreatedBy { get; set; }
@@ -26,15 +26,24 @@ public sealed class Playlist : Entity, IPlaylist
         Guid userId,
         IDateTimeProvider dateTimeProvider)
     {
+        var id = Guid.NewGuid();
+
+        Playlist playlist = Create(id, userId, PlaylistConstants.DefaultLovedSongsPlaylistName, dateTimeProvider, $"{id}/cover.jpg", (int)PlaylistType.LovedSongs);
+
+        return playlist;
+    }
+
+    public static Playlist Create(Guid playlistId, Guid userId, string name, IDateTimeProvider dateTimeProvider, string imageKey, int type)
+    {
         var playlist = new Playlist
         {
-            Id = Guid.NewGuid(),
+            Id = playlistId,
             CreatedBy = userId,
-            Name = PlaylistConstants.DefaultLovedSongsPlaylistName,
-            Color = PlaylistConstants.DefaultPlaylistColor,
+            Name = name,
             CreatedAt = dateTimeProvider.UtcNow,
-            ImageUrl = "{id}/cover.jpg",
-            Type = (int)PlaylistType.LovedSongs,
+            Color = PlaylistConstants.DefaultPlaylistColor,
+            ImageKey = imageKey,
+            Type = type,
         };
 
         playlist.Raise(new PlaylistCreatedDomainEvent(playlist.Id, userId, (PlaylistType)playlist.Type));

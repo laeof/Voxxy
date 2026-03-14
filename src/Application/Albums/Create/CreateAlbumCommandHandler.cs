@@ -41,17 +41,14 @@ internal sealed class CreateAlbumCommandHandler(
 
         var albumId = Guid.NewGuid();
 
-        var album = new Album
-        {
-            Id = albumId,
-            CreatedBy = userContext.UserId,
-            Name = command.Name,
-            CreatedAt = dateTimeProvider.UtcNow,
-            Color = AlbumsConstants.DefaultAlbumColor,
-            ImageUrl = assetsOptions.Value.ImageLogicUrl.Replace("{id}", albumId.ToString()),
-            Type = (int)PlaylistType.Album,
-            ArtistId = artist.Id,
-        };
+        var album = Album.Create(
+            albumId, 
+            userContext.UserId, 
+            command.Name, 
+            dateTimeProvider, 
+            assetsOptions.Value.ImageLogicUrl.Replace("{id}", albumId.ToString()), 
+            (int)PlaylistType.Album, 
+            artist.Id);
 
         context.Albums.Add(album);
 
