@@ -1,17 +1,20 @@
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
+using Application.Abstractions.Media;
 using Application.Abstractions.Messaging;
 using Application.Users.Me;
 using Domain.Token;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
+using SharedKernel.Constants;
 
 namespace Application.Users.Refresh;
 
 internal sealed class RefreshTokenCommandHandler(
     IApplicationDbContext context,
     IDateTimeProvider dateTimeProvider,
+    IMediaUrlResolver mediaUrlResolver,
     ITokenProvider tokenProvider) : ICommandHandler<RefreshTokenCommand, RefreshTokenResponse>
 {
     public async Task<Result<RefreshTokenResponse>> Handle(RefreshTokenCommand command, CancellationToken cancellationToken)
@@ -47,7 +50,7 @@ internal sealed class RefreshTokenCommandHandler(
                 Id = user.Id,
                 Email = user.Email,
                 FullName = user.FirstName + " " + user.LastName,
-                ImageUrl = user.ImageUrl,
+                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Users, user.ImageUrl).ToString(),
                 UserClaims = Array.Empty<string>()
             },
             AccessToken = tokenProvider.CreateAccessToken(user),

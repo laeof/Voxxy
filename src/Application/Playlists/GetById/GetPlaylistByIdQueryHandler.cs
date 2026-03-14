@@ -1,5 +1,6 @@
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
+using Application.Abstractions.Media;
 using Application.Abstractions.Messaging;
 using Application.Albums.GetById;
 using Application.Artists.GetById;
@@ -9,11 +10,12 @@ using Domain.Playlists;
 using Domain.Todos;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
+using SharedKernel.Constants;
 using SharedKernel.Enums;
 
 namespace Application.Playlists.GetById;
 
-internal sealed class GetPlaylistByIdQueryHandler(IApplicationDbContext context)
+internal sealed class GetPlaylistByIdQueryHandler(IApplicationDbContext context, IMediaUrlResolver mediaUrlResolver)
     : IQueryHandler<GetPlaylistByIdQuery, PlaylistResponse>
 {
     public async Task<Result<PlaylistResponse>> Handle(GetPlaylistByIdQuery query, CancellationToken cancellationToken)
@@ -27,12 +29,13 @@ internal sealed class GetPlaylistByIdQueryHandler(IApplicationDbContext context)
                 CreatedAt = playlist.CreatedAt,
                 UpdatedAt = playlist.UpdatedAt,
                 PrimaryColor = playlist.Color,
-                ImageUrl = playlist.ImageUrl,
+                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Playlists, playlist.ImageUrl).ToString(),
                 CreatedBy = new UserResponse
                 {
                     Id = playlist.CreatedByUser.Id,
                     FullName = playlist.CreatedByUser.FirstName + " " + playlist.CreatedByUser.LastName,
                     Email = playlist.CreatedByUser.Email,
+                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Users, playlist.CreatedByUser.ImageUrl).ToString()
                 },
                 PlaylistType = (PlaylistType)playlist.Type,
                 Tracks = playlist.Tracks.Select(track => new TrackResponse
@@ -44,12 +47,12 @@ internal sealed class GetPlaylistByIdQueryHandler(IApplicationDbContext context)
                     UpdatedAt = track.UpdatedAt,
                     AudioKey = track.AudioKey,
                     AlbumOrder = track.AlbumOrder,
-                    ImageUrl = track.ImageUrl,
+                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.ImageUrl).ToString(),
                     Album = new AlbumResponse
                     {
                         Id = track.Album.Id,
                         Name = track.Album.Name,
-                        ImageUrl = track.Album.ImageUrl,
+                        ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.Album.ImageUrl).ToString(),
                         CreatedAt = track.Album.CreatedAt,
                         UpdatedAt = track.Album.UpdatedAt,
                         PrimaryColor = track.Album.Color,
@@ -61,8 +64,9 @@ internal sealed class GetPlaylistByIdQueryHandler(IApplicationDbContext context)
                         Name = track.Album.Artist.Name,
                         CreatedAt = track.Album.Artist.CreatedAt,
                         UpdatedAt = track.Album.Artist.UpdatedAt,
-                        ImageUrl = track.Album.Artist.ImageUrl,
-                    }
+                        ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, track.Album.Artist.ImageUrl).ToString(),
+                    },
+                    FromPlaylist = playlist.Id
                 }).ToList(),
             })
             .SingleOrDefaultAsync(cancellationToken);

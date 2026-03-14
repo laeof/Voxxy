@@ -23,7 +23,6 @@ internal sealed class GetById : IEndpoint
 
             return result.Match(Results.Ok, CustomResults.Problem);
         })
-        .WithTags(Tags.Albums)
-        .RequireAuthorization();
+        .WithTags(Tags.Albums);
     }
 }

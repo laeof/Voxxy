@@ -22,15 +22,17 @@ internal sealed class RegisterUserCommandHandler(
             return Result.Failure<Guid>(UserErrors.EmailNotUnique);
         }
 
+        var userId = Guid.NewGuid();
+
         var user = new User
         {
-            Id = Guid.NewGuid(),
+            Id = userId,
             Email = command.Email,
             FirstName = command.FirstName,
             LastName = command.LastName,
             PasswordHash = passwordHasher.Hash(command.Password),
             CreatedAt = DateTime.UtcNow,
-            ImageUrl = assetsOptions.Value.UserAvatarUrl,
+            ImageUrl = assetsOptions.Value.ImageLogicUrl.Replace("{id}", userId.ToString()),
         };
 
         user.Raise(new UserRegisteredDomainEvent(user.Id));

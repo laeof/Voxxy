@@ -1,17 +1,20 @@
 ﻿using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
+using Application.Abstractions.Media;
 using Application.Abstractions.Messaging;
 using Application.Users.Me;
 using Domain.Token;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
+using SharedKernel.Constants;
 
 namespace Application.Users.Login;
 
 internal sealed class LoginUserCommandHandler(
     IApplicationDbContext context,
     IPasswordHasher passwordHasher,
+    IMediaUrlResolver mediaUrlResolver,
     ITokenProvider tokenProvider) : ICommandHandler<LoginUserCommand, LoginResponse>
 {
     public async Task<Result<LoginResponse>> Handle(LoginUserCommand command, CancellationToken cancellationToken)
@@ -53,7 +56,7 @@ internal sealed class LoginUserCommandHandler(
                 Id = user.Id,
                 Email = user.Email,
                 FullName = user.FirstName + " " + user.LastName,
-                ImageUrl = user.ImageUrl,
+                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Users, user.ImageUrl).ToString(),
                 UserClaims = Array.Empty<string>()
             },
             AccessToken = token,

@@ -46,7 +46,7 @@ internal sealed class CreateTrackCommandHandler(
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             AudioKey = defaultAssets.Value.AudioLogicUrl.Replace("{id}", trackId.ToString()),
-            ImageUrl = defaultAssets.Value.PlaylistImageUrl.Replace("{id}", command.AlbumId.ToString()),
+            ImageUrl = defaultAssets.Value.ImageLogicUrl.Replace("{id}", command.AlbumId.ToString()),
             Duration = 0,
             AlbumOrder = command.AlbumOrder
         };

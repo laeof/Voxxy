@@ -17,4 +17,5 @@ public sealed class TrackResponse
     public ArtistResponse Artist { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    public Guid? FromPlaylist { get; set; }
 }

@@ -4,6 +4,7 @@ using Application.Abstractions.Messaging;
 using Domain.Playlists;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using SharedKernel;
 using SharedKernel.Constants;
 using SharedKernel.Enums;
@@ -13,6 +14,7 @@ namespace Application.Playlists.Create;
 internal sealed class CreatePlaylistCommandHandler(
     IApplicationDbContext context,
     IDateTimeProvider dateTimeProvider,
+    IOptions<DefaultAssetsOptions> assetsOptions,
     IUserContext userContext)
     : ICommandHandler<CreatePlaylistCommand, Guid>
 {
@@ -28,14 +30,16 @@ internal sealed class CreatePlaylistCommandHandler(
 
         //todo make more validations
 
+        var playlistId = Guid.NewGuid();
+
         var playlist = new Playlist
         {
-            Id = Guid.NewGuid(),
+            Id = playlistId,
             CreatedBy = userContext.UserId,
             Name = command.Name,
             CreatedAt = dateTimeProvider.UtcNow,
             Color = PlaylistConstants.DefaultPlaylistColor,
-            ImageUrl = PlaylistConstants.DefaultPlaylistImageUrl,
+            ImageUrl = assetsOptions.Value.ImageLogicUrl.Replace("{id}", playlistId.ToString()),
             Type = (int)PlaylistType.Playlist,
         };
 

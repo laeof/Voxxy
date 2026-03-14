@@ -5,6 +5,7 @@ using Domain.Albums;
 using Domain.Artists;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using SharedKernel;
 using SharedKernel.Constants;
 using SharedKernel.Enums;
@@ -14,6 +15,7 @@ namespace Application.Albums.Create;
 internal sealed class CreateAlbumCommandHandler(
     IApplicationDbContext context,
     IDateTimeProvider dateTimeProvider,
+    IOptions<DefaultAssetsOptions> assetsOptions,
     IUserContext userContext)
     : ICommandHandler<CreateAlbumCommand, Guid>
 {
@@ -37,14 +39,16 @@ internal sealed class CreateAlbumCommandHandler(
 
         //todo make more validations
 
+        var albumId = Guid.NewGuid();
+
         var album = new Album
         {
-            Id = Guid.NewGuid(),
+            Id = albumId,
             CreatedBy = userContext.UserId,
             Name = command.Name,
             CreatedAt = dateTimeProvider.UtcNow,
             Color = AlbumsConstants.DefaultAlbumColor,
-            ImageUrl = AlbumsConstants.DefaultAlbumImageUrl,
+            ImageUrl = assetsOptions.Value.ImageLogicUrl.Replace("{id}", albumId.ToString()),
             Type = (int)PlaylistType.Album,
             ArtistId = artist.Id,
         };

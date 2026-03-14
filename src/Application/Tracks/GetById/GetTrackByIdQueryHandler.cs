@@ -1,5 +1,6 @@
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
+using Application.Abstractions.Media;
 using Application.Abstractions.Messaging;
 using Application.Albums.GetById;
 using Application.Artists.GetById;
@@ -10,11 +11,12 @@ using Domain.Todos;
 using Domain.Tracks;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
+using SharedKernel.Constants;
 using SharedKernel.Enums;
 
 namespace Application.Tracks.GetById;
 
-internal sealed class GetTrackByIdQueryHandler(IApplicationDbContext context)
+internal sealed class GetTrackByIdQueryHandler(IApplicationDbContext context, IMediaUrlResolver mediaUrlResolver)
     : IQueryHandler<GetTrackByIdQuery, TrackResponse>
 {
     public async Task<Result<TrackResponse>> Handle(GetTrackByIdQuery query, CancellationToken cancellationToken)
@@ -27,20 +29,20 @@ internal sealed class GetTrackByIdQueryHandler(IApplicationDbContext context)
                 Name = track.Name,
                 CreatedAt = track.CreatedAt,
                 UpdatedAt = track.UpdatedAt,
-                ImageUrl = track.ImageUrl,
+                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.ImageUrl).ToString(),
                 AudioKey = track.AudioKey,
                 Duration = track.Duration,
                 Album = new AlbumResponse
                 {
                     Id = track.AlbumId,
                     Name = track.Album.Name,
-                    ImageUrl = track.Album.ImageUrl
+                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.Album.ImageUrl).ToString(),
                 },
                 Artist = new ArtistResponse
                 {
                     Id = track.ArtistId,
                     Name = track.Artist.Name,
-                    ImageUrl = track.Artist.ImageUrl
+                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, track.Artist.ImageUrl).ToString(),
                 }
             })
             .SingleOrDefaultAsync(cancellationToken);

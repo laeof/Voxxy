@@ -1,4 +1,5 @@
 using Application.Abstractions.Data;
+using Application.Abstractions.Media;
 using Application.Abstractions.Messaging;
 using Application.Artists.GetById;
 using Application.Tracks.GetById;
@@ -6,11 +7,12 @@ using Application.Users.GetByEmail;
 using Domain.Albums;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
+using SharedKernel.Constants;
 using SharedKernel.Enums;
 
 namespace Application.Albums.GetById;
 
-internal sealed class GetAlbumByIdQueryHandler(IApplicationDbContext context)
+internal sealed class GetAlbumByIdQueryHandler(IApplicationDbContext context, IMediaUrlResolver mediaUrlResolver)
     : IQueryHandler<GetAlbumByIdQuery, AlbumResponse>
 {
     public async Task<Result<AlbumResponse>> Handle(GetAlbumByIdQuery query, CancellationToken cancellationToken)
@@ -24,24 +26,43 @@ internal sealed class GetAlbumByIdQueryHandler(IApplicationDbContext context)
                 CreatedAt = album.CreatedAt,
                 UpdatedAt = album.UpdatedAt,
                 PrimaryColor = album.Color,
-                ImageUrl = album.ImageUrl,
+                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, album.ImageUrl).ToString(),
                 CreatedBy = new ArtistResponse
                 {
                     Id = album.Artist.Id,
                     Name = album.Artist.Name,
-                    ImageUrl = album.Artist.ImageUrl,
+                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, album.Artist.ImageUrl).ToString(),
                 },
-                Tracks = album.Tracks
-                    .Select(track => new TrackResponse
+                Tracks = album.Tracks.Select(track => new TrackResponse
+                {
+                    Id = track.Id,
+                    Name = track.Name,
+                    Duration = track.Duration,
+                    CreatedAt = track.CreatedAt,
+                    UpdatedAt = track.UpdatedAt,
+                    AudioKey = track.AudioKey,
+                    AlbumOrder = track.AlbumOrder,
+                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.ImageUrl).ToString(),
+                    Album = new AlbumResponse
                     {
-                        Id = track.Id,
-                        Name = track.Name,
-                        Duration = track.Duration,
-                        AlbumOrder = track.AlbumOrder,
-                        CreatedAt = track.CreatedAt,
-                        UpdatedAt = track.UpdatedAt,
-                    })
-                    .ToList(),
+                        Id = track.Album.Id,
+                        Name = track.Album.Name,
+                        ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.Album.ImageUrl).ToString(),
+                        CreatedAt = track.Album.CreatedAt,
+                        UpdatedAt = track.Album.UpdatedAt,
+                        PrimaryColor = track.Album.Color,
+                        PlaylistType = (PlaylistType)track.Album.Type,
+                    },
+                    Artist = new ArtistResponse
+                    {
+                        Id = track.Album.Artist.Id,
+                        Name = track.Album.Artist.Name,
+                        CreatedAt = track.Album.Artist.CreatedAt,
+                        UpdatedAt = track.Album.Artist.UpdatedAt,
+                        ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, track.Album.Artist.ImageUrl).ToString(),
+                    },
+                    FromPlaylist = album.Id
+                }).ToList(),
                 PlaylistType = (PlaylistType)album.Type,
             })
             .SingleOrDefaultAsync(cancellationToken);

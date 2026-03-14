@@ -2,6 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Application.Abstractions.Authentication;
+using Application.Abstractions.Media;
 using Domain.Users;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -10,7 +11,7 @@ using SharedKernel.Constants;
 
 namespace Infrastructure.Authentication;
 
-internal sealed class TokenProvider(IConfiguration configuration) : ITokenProvider
+internal sealed class TokenProvider(IMediaUrlResolver mediaUrlResolver, IConfiguration configuration) : ITokenProvider
 {
     public string CreateAccessToken(User user)
     {
@@ -26,7 +27,7 @@ internal sealed class TokenProvider(IConfiguration configuration) : ITokenProvid
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Name, user.FirstName + " " + user.LastName),
-                new Claim(ClaimTypes.Uri, user.ImageUrl ?? string.Empty)
+                new Claim(ClaimTypes.Uri, mediaUrlResolver.GetPublicUrl(AzureContainerNames.Users, user.ImageUrl).ToString())
             ]),
             Expires = DateTime.UtcNow.AddMinutes(configuration.GetValue<int>("Jwt:ExpirationInMinutes")),
             SigningCredentials = credentials,

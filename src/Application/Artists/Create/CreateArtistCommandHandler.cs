@@ -28,13 +28,15 @@ internal sealed class CreateArtistCommandHandler(
 
         //todo make more validations
 
+        var artistId = Guid.NewGuid();
+
         var artist = new Artist
         {
-            Id = Guid.NewGuid(),
+            Id = artistId,
             UserId = command.UserId,
             Name = command.Name,
             CreatedAt = dateTimeProvider.UtcNow,
-            ImageUrl = defaultAssets.Value.ArtistImageUrl,
+            ImageUrl = defaultAssets.Value.ImageLogicUrl.Replace("{id}", artistId.ToString()),
             CreatedByUserId = userContext.UserId,
         };
 

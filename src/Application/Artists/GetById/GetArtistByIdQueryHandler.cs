@@ -1,15 +1,17 @@
 using Application.Abstractions.Data;
+using Application.Abstractions.Media;
 using Application.Abstractions.Messaging;
 using Application.Albums.GetById;
 using Application.Tracks.GetById;
 using Domain.Artists;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
+using SharedKernel.Constants;
 using SharedKernel.Enums;
 
 namespace Application.Artists.GetById;
 
-internal sealed class GetArtistByIdQueryHandler(IApplicationDbContext context)
+internal sealed class GetArtistByIdQueryHandler(IApplicationDbContext context, IMediaUrlResolver mediaUrlResolver)
     : IQueryHandler<GetArtistByIdQuery, ArtistResponse>
 {
     public async Task<Result<ArtistResponse>> Handle(GetArtistByIdQuery query, CancellationToken cancellationToken)
@@ -22,13 +24,13 @@ internal sealed class GetArtistByIdQueryHandler(IApplicationDbContext context)
                 Name = artist.Name,
                 CreatedAt = artist.CreatedAt,
                 UpdatedAt = artist.UpdatedAt,
-                ImageUrl = artist.ImageUrl,
+                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, artist.ImageUrl).ToString(),
                 Albums = artist.Albums
                     .Select(album => new AlbumResponse
                     {
                         Id = album.Id,
                         Name = album.Name,
-                        ImageUrl = album.ImageUrl,
+                        ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, album.ImageUrl).ToString(),
                         CreatedAt = album.CreatedAt,
                         UpdatedAt = album.UpdatedAt,
                         PrimaryColor = album.Color,
@@ -41,7 +43,7 @@ internal sealed class GetArtistByIdQueryHandler(IApplicationDbContext context)
                             UpdatedAt = track.UpdatedAt,
                             AudioKey = track.AudioKey,
                             AlbumOrder = track.AlbumOrder,
-                            ImageUrl = track.ImageUrl,
+                            ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.ImageUrl).ToString(),
 
                         }).ToList(),
                         PlaylistType = (PlaylistType)album.Type,

@@ -1,8 +1,10 @@
 ﻿using System.Text;
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
+using Application.Abstractions.Media;
 using Infrastructure.Authentication;
 using Infrastructure.Authorization;
+using Infrastructure.AzureBlobStorage;
 using Infrastructure.Database;
 using Infrastructure.DomainEvents;
 using Infrastructure.Time;
@@ -27,7 +29,15 @@ public static class DependencyInjection
             .AddDatabase(configuration)
             .AddHealthChecks(configuration)
             .AddAuthenticationInternal(configuration)
-            .AddAuthorizationInternal();
+            .AddAuthorizationInternal()
+            .AddAzureBlobStorage();
+
+    private static IServiceCollection AddAzureBlobStorage(this IServiceCollection services)
+    {
+        services.AddSingleton<IMediaUrlResolver, AzureBlobMediaUrlResolver>();
+
+        return services;
+    }
 
     private static IServiceCollection AddServices(this IServiceCollection services)
     {

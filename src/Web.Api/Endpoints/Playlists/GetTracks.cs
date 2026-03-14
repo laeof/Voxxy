@@ -1,24 +1,24 @@
 using Application.Abstractions.Messaging;
-using Application.Playlists.GetById;
-using Microsoft.AspNetCore.Mvc;
+using Application.Playlists.GetTracks;
+using Application.Tracks.GetById;
 using SharedKernel;
 using Web.Api.Extensions;
 using Web.Api.Infrastructure;
 
 namespace Web.Api.Endpoints.Playlists;
 
-internal sealed class GetById : IEndpoint
+internal sealed class GetTracks : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("playlists/{id:guid}", async (
+        app.MapGet("playlists/{id:guid}/tracks", async (
             Guid id,
-            IQueryHandler<GetPlaylistByIdQuery, PlaylistResponse> handler,
+            IQueryHandler<GetPlaylistTracksQuery, List<TrackResponse>> handler,
             CancellationToken cancellationToken) =>
         {
-            var command = new GetPlaylistByIdQuery(id);
+            var command = new GetPlaylistTracksQuery(id);
 
-            Result<PlaylistResponse> result = await handler.Handle(command, cancellationToken);
+            Result<List<TrackResponse>> result = await handler.Handle(command, cancellationToken);
 
             return result.Match(Results.Ok, CustomResults.Problem);
         })

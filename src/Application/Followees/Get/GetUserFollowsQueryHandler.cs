@@ -1,6 +1,8 @@
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
+using Application.Abstractions.Media;
 using Application.Abstractions.Messaging;
+using Application.Albums.GetById;
 using Application.Artists.GetById;
 using Application.Playlists.GetById;
 using Application.Tracks.GetById;
@@ -9,13 +11,15 @@ using Domain.Playlists;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
+using SharedKernel.Constants;
 using SharedKernel.Enums;
 
 namespace Application.Followees.Get;
 
 internal sealed class GetUserFollowsQueryHandler(
     IApplicationDbContext context,
-    IUserContext userContext)
+    IUserContext userContext,
+    IMediaUrlResolver mediaUrlResolver)
     : IQueryHandler<GetUserFollowsQuery, List<FollowResponse>>
 {
     public async Task<Result<List<FollowResponse>>> Handle(
@@ -50,13 +54,43 @@ internal sealed class GetUserFollowsQueryHandler(
                             FollowType = (FollowType)x.Type,
                             Name = x.Name,
                             PrimaryColor = x.Color,
-                            ImageUrl = x.ImageUrl,
+                            ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Playlists, x.ImageUrl).ToString(),
                             FollowedSince = followee.CreatedAt,
                             Artist = new ArtistResponse
                             {
                                 Id = x.CreatedByUser.Id,
                                 Name = x.CreatedByUser.FirstName + " " + x.CreatedByUser.LastName,
                             },
+                            Tracks = x.Tracks.Select(track => new TrackResponse
+                            {
+                                Id = track.Id,
+                                Name = track.Name,
+                                Duration = track.Duration,
+                                CreatedAt = track.CreatedAt,
+                                UpdatedAt = track.UpdatedAt,
+                                AudioKey = track.AudioKey,
+                                AlbumOrder = track.AlbumOrder,
+                                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.ImageUrl).ToString(),
+                                Album = new AlbumResponse
+                                {
+                                    Id = track.Album.Id,
+                                    Name = track.Album.Name,
+                                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.Album.ImageUrl).ToString(),
+                                    CreatedAt = track.Album.CreatedAt,
+                                    UpdatedAt = track.Album.UpdatedAt,
+                                    PrimaryColor = track.Album.Color,
+                                    PlaylistType = (PlaylistType)track.Album.Type,
+                                },
+                                Artist = new ArtistResponse
+                                {
+                                    Id = track.Album.Artist.Id,
+                                    Name = track.Album.Artist.Name,
+                                    CreatedAt = track.Album.Artist.CreatedAt,
+                                    UpdatedAt = track.Album.Artist.UpdatedAt,
+                                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, track.Album.Artist.ImageUrl).ToString(),
+                                },
+                                FromPlaylist = x.Id
+                            }).ToList(),
                         })
                         .SingleOrDefaultAsync(cancellationToken);
 
@@ -76,14 +110,44 @@ internal sealed class GetUserFollowsQueryHandler(
                             FollowType = (FollowType)x.Type,
                             Name = x.Name,
                             PrimaryColor = x.Color,
-                            ImageUrl = x.ImageUrl,
+                            ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, x.ImageUrl).ToString(),
                             FollowedSince = followee.CreatedAt,
                             Artist = new ArtistResponse
                             {
                                 Id = x.Artist.Id,
                                 Name = x.Artist.Name,
-                                ImageUrl = x.Artist.ImageUrl,
+                                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, x.Artist.ImageUrl).ToString(),
                             },
+                            Tracks = x.Tracks.Select(track => new TrackResponse
+                            {
+                                Id = track.Id,
+                                Name = track.Name,
+                                Duration = track.Duration,
+                                CreatedAt = track.CreatedAt,
+                                UpdatedAt = track.UpdatedAt,
+                                AudioKey = track.AudioKey,
+                                AlbumOrder = track.AlbumOrder,
+                                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.ImageUrl).ToString(),
+                                Album = new AlbumResponse
+                                {
+                                    Id = track.Album.Id,
+                                    Name = track.Album.Name,
+                                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.Album.ImageUrl).ToString(),
+                                    CreatedAt = track.Album.CreatedAt,
+                                    UpdatedAt = track.Album.UpdatedAt,
+                                    PrimaryColor = track.Album.Color,
+                                    PlaylistType = (PlaylistType)track.Album.Type,
+                                },
+                                Artist = new ArtistResponse
+                                {
+                                    Id = track.Album.Artist.Id,
+                                    Name = track.Album.Artist.Name,
+                                    CreatedAt = track.Album.Artist.CreatedAt,
+                                    UpdatedAt = track.Album.Artist.UpdatedAt,
+                                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, track.Album.Artist.ImageUrl).ToString(),
+                                },
+                                FromPlaylist = x.Id
+                            }).ToList(),
                         })
                         .SingleOrDefaultAsync(cancellationToken);
 
@@ -100,7 +164,7 @@ internal sealed class GetUserFollowsQueryHandler(
                             Id = x.Id,
                             FollowType = FollowType.Artist,
                             Name = x.Name,
-                            ImageUrl = x.ImageUrl,
+                            ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, x.ImageUrl).ToString(),
                             FollowedSince = followee.CreatedAt,
                         })
                         .SingleOrDefaultAsync(cancellationToken);

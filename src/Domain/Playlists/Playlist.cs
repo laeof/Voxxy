@@ -33,7 +33,7 @@ public sealed class Playlist : Entity, IPlaylist
             Name = PlaylistConstants.DefaultLovedSongsPlaylistName,
             Color = PlaylistConstants.DefaultPlaylistColor,
             CreatedAt = dateTimeProvider.UtcNow,
-            ImageUrl = PlaylistConstants.DefaultPlaylistImageUrl,
+            ImageUrl = "{id}/cover.jpg",
             Type = (int)PlaylistType.LovedSongs,
         };
 
