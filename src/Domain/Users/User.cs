@@ -12,10 +12,24 @@ public sealed class User : Entity
     public string FirstName { get; set; }
     public string LastName { get; set; }
     public string PasswordHash { get; set; }
-    public string ImageUrl { get; set; }
+    public string ImageKey { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public List<Playlist> Playlists { get; set; } = new();
     public List<RefreshToken> RefreshTokens { get; set; } = new();
     public List<Album> Albums { get; set; } = new();
+
+    public static User Create(Guid userId, string email, string firstName, string lastName, string passwordHash, string imageKey, DateTime createdAt)
+    {
+        return new User
+        {
+            Id = userId,
+            Email = email,
+            FirstName = firstName,
+            LastName = lastName,
+            PasswordHash = passwordHash,
+            ImageKey = imageKey,
+            CreatedAt = createdAt
+        };
+    }
 }

@@ -37,21 +37,15 @@ internal sealed class CreateTrackCommandHandler(
 
         var trackId = Guid.NewGuid();
 
-        var newTrack = new Track
-        {
-            Id = trackId,
-            Name = command.Name,
-            ArtistId = command.ArtistId,
-            AlbumId = command.AlbumId,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
-            AudioKey = defaultAssets.Value.AudioLogicUrl.Replace("{id}", trackId.ToString()),
-            ImageUrl = defaultAssets.Value.ImageLogicUrl.Replace("{id}", command.AlbumId.ToString()),
-            Duration = 0,
-            AlbumOrder = command.AlbumOrder
-        };
+        string audioKey = defaultAssets.Value.AudioLogicUrl.Replace("{id}", trackId.ToString());
+        string imageKey = defaultAssets.Value.ImageLogicUrl.Replace("{id}", command.AlbumId.ToString());
 
-        context.Tracks.Add(newTrack);
+        var trackMetaData = TrackMetaData.Create(trackId, command.Name, command.AlbumId, command.ArtistId, command.AlbumOrder, DateTime.UtcNow);
+
+        var track = Track.Create(trackMetaData, audioKey, imageKey);
+
+        context.Tracks.Add(track);
+
         await context.SaveChangesAsync(cancellationToken);
 
         return trackId;

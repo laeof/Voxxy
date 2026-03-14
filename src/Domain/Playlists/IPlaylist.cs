@@ -9,7 +9,7 @@ public interface IPlaylist
     string Name { get; set; }
     int Type { get; set; }
     string Color { get; set; }
-    string ImageUrl { get; set; }
+    string ImageKey { get; set; }
     DateTime CreatedAt { get; set; }
     DateTime? UpdatedAt { get; set; }
     Guid CreatedBy { get; set; }
