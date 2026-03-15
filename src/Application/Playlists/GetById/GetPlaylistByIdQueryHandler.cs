@@ -29,13 +29,13 @@ internal sealed class GetPlaylistByIdQueryHandler(IApplicationDbContext context,
                 CreatedAt = playlist.CreatedAt,
                 UpdatedAt = playlist.UpdatedAt,
                 PrimaryColor = playlist.Color,
-                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Playlists, playlist.ImageUrl).ToString(),
+                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Playlists, playlist.ImageKey).ToString(),
                 CreatedBy = new UserResponse
                 {
                     Id = playlist.CreatedByUser.Id,
                     FullName = playlist.CreatedByUser.FirstName + " " + playlist.CreatedByUser.LastName,
                     Email = playlist.CreatedByUser.Email,
-                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Users, playlist.CreatedByUser.ImageUrl).ToString()
+                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Users, playlist.CreatedByUser.ImageKey).ToString()
                 },
                 PlaylistType = (PlaylistType)playlist.Type,
                 Tracks = playlist.Tracks.Select(track => new TrackResponse
@@ -47,12 +47,12 @@ internal sealed class GetPlaylistByIdQueryHandler(IApplicationDbContext context,
                     UpdatedAt = track.UpdatedAt,
                     AudioKey = track.AudioKey,
                     AlbumOrder = track.AlbumOrder,
-                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.ImageUrl).ToString(),
+                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.ImageKey).ToString(),
                     Album = new AlbumResponse
                     {
                         Id = track.Album.Id,
                         Name = track.Album.Name,
-                        ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.Album.ImageUrl).ToString(),
+                        ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.Album.ImageKey).ToString(),
                         CreatedAt = track.Album.CreatedAt,
                         UpdatedAt = track.Album.UpdatedAt,
                         PrimaryColor = track.Album.Color,
@@ -64,7 +64,7 @@ internal sealed class GetPlaylistByIdQueryHandler(IApplicationDbContext context,
                         Name = track.Album.Artist.Name,
                         CreatedAt = track.Album.Artist.CreatedAt,
                         UpdatedAt = track.Album.Artist.UpdatedAt,
-                        ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, track.Album.Artist.ImageUrl).ToString(),
+                        ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, track.Album.Artist.ImageKey).ToString(),
                     },
                     FromPlaylist = playlist.Id
                 }).ToList(),

@@ -33,12 +33,12 @@ internal sealed class GetPlaylistTracksQueryHandler(IApplicationDbContext contex
                 UpdatedAt = track.UpdatedAt,
                 AudioKey = track.AudioKey,
                 AlbumOrder = track.AlbumOrder,
-                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.ImageUrl).ToString(),
+                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.ImageKey).ToString(),
                 Album = new AlbumResponse
                 {
                     Id = track.Album.Id,
                     Name = track.Album.Name,
-                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.Album.ImageUrl).ToString(),
+                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.Album.ImageKey).ToString(),
                     CreatedAt = track.Album.CreatedAt,
                     UpdatedAt = track.Album.UpdatedAt,
                     PrimaryColor = track.Album.Color,
@@ -50,7 +50,7 @@ internal sealed class GetPlaylistTracksQueryHandler(IApplicationDbContext contex
                     Name = track.Album.Artist.Name,
                     CreatedAt = track.Album.Artist.CreatedAt,
                     UpdatedAt = track.Album.Artist.UpdatedAt,
-                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, track.Album.Artist.ImageUrl).ToString(),
+                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, track.Album.Artist.ImageKey).ToString(),
                 },
                 FromPlaylist = query.PlaylistId
             })

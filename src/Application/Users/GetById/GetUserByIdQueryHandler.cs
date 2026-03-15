@@ -29,7 +29,7 @@ internal sealed class GetUserByIdQueryHandler(
                 Id = u.Id,
                 FullName = u.FirstName + " " + u.LastName,
                 Email = u.Email,
-                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Users, u.ImageUrl).ToString(),
+                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Users, u.ImageKey).ToString(),
             })
             .SingleOrDefaultAsync(cancellationToken);
 

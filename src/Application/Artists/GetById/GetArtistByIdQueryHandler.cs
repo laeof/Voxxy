@@ -24,13 +24,13 @@ internal sealed class GetArtistByIdQueryHandler(IApplicationDbContext context, I
                 Name = artist.Name,
                 CreatedAt = artist.CreatedAt,
                 UpdatedAt = artist.UpdatedAt,
-                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, artist.ImageUrl).ToString(),
+                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, artist.ImageKey).ToString(),
                 Albums = artist.Albums
                     .Select(album => new AlbumResponse
                     {
                         Id = album.Id,
                         Name = album.Name,
-                        ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, album.ImageUrl).ToString(),
+                        ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, album.ImageKey).ToString(),
                         CreatedAt = album.CreatedAt,
                         UpdatedAt = album.UpdatedAt,
                         PrimaryColor = album.Color,
@@ -43,7 +43,7 @@ internal sealed class GetArtistByIdQueryHandler(IApplicationDbContext context, I
                             UpdatedAt = track.UpdatedAt,
                             AudioKey = track.AudioKey,
                             AlbumOrder = track.AlbumOrder,
-                            ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.ImageUrl).ToString(),
+                            ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.ImageKey).ToString(),
 
                         }).ToList(),
                         PlaylistType = (PlaylistType)album.Type,

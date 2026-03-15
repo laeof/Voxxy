@@ -50,7 +50,7 @@ internal sealed class RefreshTokenCommandHandler(
                 Id = user.Id,
                 Email = user.Email,
                 FullName = user.FirstName + " " + user.LastName,
-                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Users, user.ImageUrl).ToString(),
+                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Users, user.ImageKey).ToString(),
                 UserClaims = Array.Empty<string>()
             },
             AccessToken = tokenProvider.CreateAccessToken(user),

@@ -29,20 +29,20 @@ internal sealed class GetTrackByIdQueryHandler(IApplicationDbContext context, IM
                 Name = track.Name,
                 CreatedAt = track.CreatedAt,
                 UpdatedAt = track.UpdatedAt,
-                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.ImageUrl).ToString(),
+                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.ImageKey).ToString(),
                 AudioKey = track.AudioKey,
                 Duration = track.Duration,
                 Album = new AlbumResponse
                 {
                     Id = track.AlbumId,
                     Name = track.Album.Name,
-                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.Album.ImageUrl).ToString(),
+                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.Album.ImageKey).ToString(),
                 },
                 Artist = new ArtistResponse
                 {
                     Id = track.ArtistId,
                     Name = track.Artist.Name,
-                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, track.Artist.ImageUrl).ToString(),
+                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, track.Artist.ImageKey).ToString(),
                 }
             })
             .SingleOrDefaultAsync(cancellationToken);
