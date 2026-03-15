@@ -30,6 +30,8 @@ public sealed class Track : Entity
             AlbumId = trackMetaData.AlbumId,
             ArtistId = trackMetaData.ArtistId,
             AlbumOrder = trackMetaData.AlbumOrder,
+            AudioKey = audioKey,
+            ImageKey = imageKey,
             CreatedAt = trackMetaData.CreatedAt
         };
     }
