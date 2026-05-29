@@ -11,15 +11,14 @@ namespace Application.Users.GetById;
 
 internal sealed class GetUserByIdQueryHandler(
     IApplicationDbContext context,
-    IUserContext userContext,
     IMediaUrlResolver mediaUrlResolver)
     : IQueryHandler<GetUserByIdQuery, UserResponse>
 {
     public async Task<Result<UserResponse>> Handle(GetUserByIdQuery query, CancellationToken cancellationToken)
     {
-        if (query.UserId != userContext.UserId)
+        if (query.UserId == Guid.Empty)
         {
-            return Result.Failure<UserResponse>(UserErrors.Unauthorized());
+            return Result.Failure<UserResponse>(UserErrors.NotFound(query.UserId));
         }
 
         UserResponse? user = await context.Users
