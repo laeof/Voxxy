@@ -174,6 +174,24 @@ internal sealed class GetUserFollowsQueryHandler(
                         followResponses.Add(artistFollowResponse);
                     }
                     break;
+                case FollowType.User:
+                    FollowResponse userFollowResponse = await context.Users.AsNoTracking()
+                        .Where(x => x.Id == followee.FolloweeId)
+                        .Select(x => new FollowResponse
+                        {
+                            Id = x.Id,
+                            FollowType = FollowType.User,
+                            Name = x.FirstName + " " + x.LastName,
+                            ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Users, x.ImageKey).ToString(),
+                            FollowedSince = followee.CreatedAt,
+                        })
+                        .SingleOrDefaultAsync(cancellationToken);
+
+                    if (userFollowResponse is not null)
+                    {
+                        followResponses.Add(userFollowResponse);
+                    }
+                    break;
                 default:
                     return Result.Failure<List<FollowResponse>>(FollowErrors.InvalidFollowType(followee.Type));
             }

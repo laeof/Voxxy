@@ -1,3 +1,4 @@
+using Application.Abstractions.Authentication;
 using Application.Abstractions.Messaging;
 using Application.Followees.Unfollow;
 using Microsoft.AspNetCore.Mvc;
@@ -9,16 +10,15 @@ namespace Web.Api.Endpoints.Folowees;
 
 internal sealed class Unfollow : IEndpoint
 {
-    public sealed record UnfollowRequest(Guid FollowerId, Guid FolloweeId);
-
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapDelete("followees", async (
-            [FromBody] UnfollowRequest request,
+        app.MapDelete("followees/{followeeId}", async (
+            Guid followeeId,
+            IUserContext userContext,
             ICommandHandler<UnfollowCommand, Guid> handler,
             CancellationToken cancellationToken) =>
         {
-            var command = new UnfollowCommand(request.FollowerId, request.FolloweeId);
+            var command = new UnfollowCommand(userContext.UserId, followeeId);
 
             Result<Guid> result = await handler.Handle(command, cancellationToken);
 
