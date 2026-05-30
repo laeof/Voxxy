@@ -7,4 +7,5 @@ public enum FollowType
     Single = 3,
     Artist = 4,
     LovedSongs = 5,
+    User = 6,
 }
