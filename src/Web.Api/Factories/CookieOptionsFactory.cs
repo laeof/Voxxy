@@ -27,4 +27,12 @@ internal sealed class CookieOptionsFactory
         Path = "/",
         Expires = DateTimeOffset.UtcNow.AddDays(_configuration.GetValue<int>("Jwt:ExpirationInDays"))
     };
+
+    public CookieOptions XsrfToken() => new()
+    {
+        HttpOnly = false,
+        Secure = true,
+        SameSite = SameSiteMode.Lax,
+        Path = "/",
+    };
 }

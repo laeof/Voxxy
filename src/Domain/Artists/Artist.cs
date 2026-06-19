@@ -22,12 +22,14 @@ public sealed class Artist : Entity
     public List<Album> Albums { get; set; } = new();
     public static Artist Create(Guid userId, string name, string imageKey, DateTime createdAt, Guid createdByUserId)
     {
+        var artistId = Guid.NewGuid();
+
         return new Artist
         {
-            Id = Guid.NewGuid(),
+            Id = artistId,
             UserId = userId,
             Name = name,
-            ImageKey = imageKey,
+            ImageKey = imageKey.Replace("{id}", artistId.ToString()),
             CreatedAt = createdAt,
             CreatedByUserId = createdByUserId,
         };

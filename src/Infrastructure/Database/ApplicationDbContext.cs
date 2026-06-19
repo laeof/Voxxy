@@ -2,8 +2,9 @@
 using Domain.Albums;
 using Domain.Artists;
 using Domain.Follows;
+using Domain.Genres;
+using Domain.Moods;
 using Domain.Playlists;
-using Domain.Todos;
 using Domain.Token;
 using Domain.Tracks;
 using Domain.Users;
@@ -19,21 +20,19 @@ public sealed class ApplicationDbContext(
     : DbContext(options), IApplicationDbContext
 {
     public DbSet<User> Users { get; set; }
-
-    public DbSet<Playlist> Playlists { get; set; }
-
-    public DbSet<Artist> Artists { get; set; }
-
+    public DbSet<Mood> Moods { get; set; }
     public DbSet<Album> Albums { get; set; }
-
     public DbSet<Track> Tracks { get; set; }
-
+    public DbSet<Genre> Genres { get; set; }
+    public DbSet<Artist> Artists { get; set; }
+    public DbSet<Playlist> Playlists { get; set; }
     public DbSet<Following> Followings { get; set; }
-
     public DbSet<RefreshToken> RefreshTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.HasPostgresExtension("pg_trgm");
+
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
 
         modelBuilder.HasDefaultSchema(Schemas.Default);

@@ -7,7 +7,6 @@ using Application.Artists.GetById;
 using Application.Tracks.GetById;
 using Application.Users.GetByEmail;
 using Domain.Playlists;
-using Domain.Todos;
 using Domain.Tracks;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;

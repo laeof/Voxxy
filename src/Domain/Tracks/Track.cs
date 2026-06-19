@@ -1,5 +1,7 @@
 using Domain.Albums;
 using Domain.Artists;
+using Domain.Genres;
+using Domain.Moods;
 using Domain.Playlists;
 using SharedKernel;
 
@@ -20,6 +22,8 @@ public sealed class Track : Entity
     public Album Album { get; set; }
     public Artist Artist { get; set; }
     public List<Playlist> Playlists { get; set; } = new();
+    public List<Genre> Genres { get; set; } = new();
+    public List<Mood> Moods { get; set; } = new();
 
     public static Track Create(TrackMetaData trackMetaData, string audioKey, string imageKey)
     {
