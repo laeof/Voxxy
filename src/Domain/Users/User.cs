@@ -1,4 +1,4 @@
-﻿using Domain.Albums;
+﻿using Domain.Artists;
 using Domain.Playlists;
 using Domain.Token;
 using SharedKernel;
@@ -17,8 +17,9 @@ public sealed class User : Entity
     public DateTime? UpdatedAt { get; set; }
     public List<Playlist> Playlists { get; set; } = new();
     public List<RefreshToken> RefreshTokens { get; set; } = new();
-    public List<Album> Albums { get; set; } = new();
-
+    public List<Artist> Artists { get; set; } = new();
+    public List<Artist> CreatedArtists { get; set; } = new();
+    public List<Artist> UpdatedArtists { get; set; } = new();
     public static User Create(Guid userId, string email, string firstName, string lastName, string passwordHash, string imageKey, DateTime createdAt)
     {
         return new User

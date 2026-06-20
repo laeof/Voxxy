@@ -6,8 +6,13 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Serilog;
 using Web.Api;
 using Web.Api.Extensions;
+using Web.Api.Factories;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+// REMARK: Set max request body size to 500MB to allow for large file uploads (e.g., audio files, cover images).
+// MVP
+builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = 500 * 1024 * 1024);
 
 builder.Host.UseSerilog((context, loggerConfig) => loggerConfig.ReadFrom.Configuration(context.Configuration));
 
@@ -32,6 +37,15 @@ builder.Services.AddCors(options =>
             .AllowCredentials()
     )
 );
+
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-XSRF-TOKEN";
+    options.Cookie.Name = "VOXXY-XSRF-COOKIE";
+    options.Cookie.HttpOnly = true;
+    // options.Cookie.SecurePolicy = CookieSecurePolicy.Always; //ssl required for secure cookies
+    options.Cookie.SameSite = SameSiteMode.Strict;
+});
 
 WebApplication app = builder.Build();
 
@@ -60,6 +74,8 @@ app.UseCors();
 app.UseAuthentication();
 
 app.UseAuthorization();
+
+app.UseAntiforgery();
 
 await app.RunAsync();
 

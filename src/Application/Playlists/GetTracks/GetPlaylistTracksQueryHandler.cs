@@ -7,7 +7,6 @@ using Application.Artists.GetById;
 using Application.Tracks.GetById;
 using Application.Users.GetByEmail;
 using Domain.Playlists;
-using Domain.Todos;
 using Domain.Tracks;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -36,22 +35,21 @@ internal sealed class GetPlaylistTracksQueryHandler(IApplicationDbContext contex
                 ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.ImageKey).ToString(),
                 Album = new AlbumResponse
                 {
-                    Id = track.Album.Id,
-                    Name = track.Album.Name,
-                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.Album.ImageKey).ToString(),
-                    CreatedAt = track.Album.CreatedAt,
-                    UpdatedAt = track.Album.UpdatedAt,
-                    PrimaryColor = track.Album.Color,
-                    PlaylistType = (PlaylistType)track.Album.Type,
+                    Id = track.Release.Id,
+                    Name = track.Release.Title,
+                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.Release.ImageKey).ToString(),
+                    CreatedAt = track.Release.ReleaseDate,
+                    PrimaryColor = track.Release.Color,
+                    PlaylistType = (PlaylistType)track.Release.Type,
                 },
-                Artist = new ArtistResponse
+                Artists = track.Release.Artists.Select(artist => new ArtistResponse
                 {
-                    Id = track.Album.Artist.Id,
-                    Name = track.Album.Artist.Name,
-                    CreatedAt = track.Album.Artist.CreatedAt,
-                    UpdatedAt = track.Album.Artist.UpdatedAt,
-                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, track.Album.Artist.ImageKey).ToString(),
-                },
+                    Id = artist.Id,
+                    Name = artist.Name,
+                    CreatedAt = artist.CreatedAt,
+                    UpdatedAt = artist.UpdatedAt,
+                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, artist.ImageKey).ToString(),
+                }).ToList(),
                 FromPlaylist = query.PlaylistId
             })
             .ToListAsync(cancellationToken);
