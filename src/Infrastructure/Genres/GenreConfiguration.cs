@@ -18,6 +18,6 @@ internal sealed class GenreConfiguration : IEntityTypeConfiguration<Genre>
             .IsUnique();
 
         builder.HasMany(t => t.Tracks)
-            .WithMany(t => t.Genres);
+            .WithMany(r => r.Genres);
     }
 }

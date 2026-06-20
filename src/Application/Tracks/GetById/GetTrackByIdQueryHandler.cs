@@ -33,16 +33,17 @@ internal sealed class GetTrackByIdQueryHandler(IApplicationDbContext context, IM
                 Duration = track.Duration,
                 Album = new AlbumResponse
                 {
-                    Id = track.AlbumId,
-                    Name = track.Album.Name,
-                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.Album.ImageKey).ToString(),
+                    Id = track.Release.Id,
+                    Name = track.Release.Title,
+                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, track.Release.ImageKey).ToString(),
                 },
-                Artist = new ArtistResponse
+                Artists = track.Artists.Select(artist => new ArtistResponse
                 {
-                    Id = track.ArtistId,
-                    Name = track.Artist.Name,
-                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, track.Artist.ImageKey).ToString(),
-                }
+                    Id = artist.Id,
+                    Name = artist.Name,
+                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, artist.ImageKey).ToString(),
+                }).ToList()
+
             })
             .SingleOrDefaultAsync(cancellationToken);
 

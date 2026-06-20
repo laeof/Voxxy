@@ -10,12 +10,17 @@ internal sealed class TrackConfiguration : IEntityTypeConfiguration<Track>
     {
         builder.HasKey(t => t.Id);
 
-        builder.HasOne(t => t.Album)
-            .WithMany(a => a.Tracks)
-            .HasForeignKey(t => t.AlbumId);
+        builder.HasOne(t => t.Release)
+            .WithMany(r => r.Tracks)
+            .HasForeignKey(t => t.ReleaseId);
 
-        builder.HasOne(t => t.Artist)
-            .WithMany(a => a.Tracks)
-            .HasForeignKey(t => t.ArtistId);
+        builder.HasMany(t => t.Genres)
+            .WithMany(g => g.Tracks);
+
+        builder.HasMany(t => t.Moods)
+            .WithMany(m => m.Tracks);
+
+        builder.HasMany(t => t.Artists)
+            .WithMany(a => a.Tracks);
     }
 }

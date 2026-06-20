@@ -6,6 +6,7 @@ using Domain.Tracks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using SharedKernel;
+using SharedKernel.Constants;
 
 namespace Application.Tracks.Streaming;
 
@@ -25,7 +26,7 @@ internal sealed class GetStreamUriQueryHandler(
 
         var service = new BlobServiceClient(connStrings.Value.AzureStorage);
 
-        BlobContainerClient container = service.GetBlobContainerClient("tracks");
+        BlobContainerClient container = service.GetBlobContainerClient(AzureContainerNames.Tracks);
         BlobClient blob = container.GetBlobClient(track.AudioKey);
 
         Uri uri = blob.GenerateSasUri(BlobSasPermissions.Read, DateTimeOffset.UtcNow.AddMinutes(5));

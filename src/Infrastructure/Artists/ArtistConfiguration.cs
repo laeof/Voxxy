@@ -14,12 +14,10 @@ internal sealed class ArtistConfiguration : IEntityTypeConfiguration<Artist>
             .IsUnique();
 
         builder.HasMany(a => a.Tracks)
-            .WithOne(t => t.Artist)
-            .HasForeignKey(t => t.ArtistId);
+            .WithMany(t => t.Artists);
 
-        builder.HasMany(a => a.Albums)
-            .WithOne(al => al.Artist)
-            .HasForeignKey(al => al.ArtistId);
+        builder.HasMany(a => a.Releases)
+            .WithMany(al => al.Artists);
 
         builder.HasOne(a => a.User)
             .WithMany(u => u.Artists)

@@ -25,14 +25,13 @@ internal sealed class GetArtistByIdQueryHandler(IApplicationDbContext context, I
                 CreatedAt = artist.CreatedAt,
                 UpdatedAt = artist.UpdatedAt,
                 ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, artist.ImageKey).ToString(),
-                Albums = artist.Albums
+                Albums = artist.Releases
                     .Select(album => new AlbumResponse
                     {
                         Id = album.Id,
-                        Name = album.Name,
+                        Name = album.Title,
                         ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, album.ImageKey).ToString(),
-                        CreatedAt = album.CreatedAt,
-                        UpdatedAt = album.UpdatedAt,
+                        CreatedAt = album.ReleaseDate,
                         PrimaryColor = album.Color,
                         Tracks = album.Tracks.Select(track => new TrackResponse
                         {

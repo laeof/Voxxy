@@ -17,28 +17,22 @@ internal sealed class GetArtistOnAccountQueryHandler(IApplicationDbContext conte
 {
     public async Task<Result<ForArtistResponse>> Handle(GetArtistOnAccountQuery query, CancellationToken cancellationToken)
     {
-        ForArtistResponse? forArtistResponse = await context.Artists
+        List<ArtistResponse> artistsOnAccountList = await context.Artists
             .Where(artist => artist.UserId == query.UserId)
-            .Select(artist => new ForArtistResponse
+            .Select(artist => new ArtistResponse
             {
-                Artists = new List<ArtistResponse>
-                {
-                    new ArtistResponse
-                    {
-                        Id = artist.Id,
-                        Name = artist.Name,
-                        CreatedAt = artist.CreatedAt,
-                        UpdatedAt = artist.UpdatedAt,
-                        ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, artist.ImageKey).ToString(),
-                    },
-                },
+                Id = artist.Id,
+                Name = artist.Name,
+                CreatedAt = artist.CreatedAt,
+                UpdatedAt = artist.UpdatedAt,
+                ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, artist.ImageKey).ToString(),
             })
-            .SingleOrDefaultAsync(cancellationToken);
+            .ToListAsync(cancellationToken);
 
-        if (forArtistResponse is null)
+        var forArtistResponse = new ForArtistResponse
         {
-            return Result.Failure<ForArtistResponse>(ArtistErrors.NotFound(query.UserId));
-        }
+            Artists = artistsOnAccountList
+        };
 
         return forArtistResponse;
     }

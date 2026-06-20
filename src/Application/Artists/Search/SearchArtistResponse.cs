@@ -1,3 +1,3 @@
 namespace Application.Artists.Search;
 
-public sealed record SearchArtistResponse(Guid Id, string Name);
+public sealed record SearchArtistResponse(Guid Id, string Title);

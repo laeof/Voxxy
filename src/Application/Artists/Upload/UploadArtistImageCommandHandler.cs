@@ -34,7 +34,7 @@ internal sealed class UploadArtistImageCommandHandler(
 
         var service = new BlobServiceClient(connStrings.Value.AzureStorage);
 
-        BlobContainerClient container = service.GetBlobContainerClient("artists");
+        BlobContainerClient container = service.GetBlobContainerClient(AzureContainerNames.Artists);
         await container.CreateIfNotExistsAsync(PublicAccessType.Blob, cancellationToken: cancellationToken);
 
         BlobClient blob = container.GetBlobClient($"{command.ArtistId}/cover.jpg");

@@ -1,6 +1,5 @@
 using Application.Albums.GetById;
 using Application.Artists.GetById;
-using Domain.Albums;
 using Domain.Artists;
 
 namespace Application.Tracks.GetById;
@@ -14,7 +13,7 @@ public sealed class TrackResponse
     public string AudioKey { get; set; }
     public int AlbumOrder { get; set; }
     public AlbumResponse Album { get; set; }
-    public ArtistResponse Artist { get; set; }
+    public List<ArtistResponse> Artists { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public Guid? FromPlaylist { get; set; }

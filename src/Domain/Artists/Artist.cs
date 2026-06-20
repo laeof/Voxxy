@@ -1,4 +1,4 @@
-using Domain.Albums;
+using Domain.ArtistReleases;
 using Domain.Tracks;
 using Domain.Users;
 using SharedKernel;
@@ -19,7 +19,7 @@ public sealed class Artist : Entity
     public User CreatedByUser { get; set; }
     public User? UpdatedByUser { get; set; }
     public List<Track> Tracks { get; set; } = new();
-    public List<Album> Albums { get; set; } = new();
+    public List<Release> Releases { get; set; } = new();
     public static Artist Create(Guid userId, string name, string imageKey, DateTime createdAt, Guid createdByUserId)
     {
         var artistId = Guid.NewGuid();

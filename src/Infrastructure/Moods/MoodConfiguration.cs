@@ -14,6 +14,6 @@ internal sealed class MoodConfiguration : IEntityTypeConfiguration<Mood>
             .IsUnique();
 
         builder.HasMany(t => t.Tracks)
-            .WithMany(t => t.Moods);
+            .WithMany(r => r.Moods);
     }
 }

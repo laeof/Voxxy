@@ -10,6 +10,10 @@ using Web.Api.Factories;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
+// REMARK: Set max request body size to 500MB to allow for large file uploads (e.g., audio files, cover images).
+// MVP
+builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = 500 * 1024 * 1024);
+
 builder.Host.UseSerilog((context, loggerConfig) => loggerConfig.ReadFrom.Configuration(context.Configuration));
 
 builder.Services.AddSwaggerGenWithAuth();
