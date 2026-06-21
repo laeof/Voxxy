@@ -9,6 +9,8 @@ public static class Tags
     public const string Artists = "Artists";
     public const string Followings = "Followings";
 
+    public const string Search = "Search";
+
     public const string ForArtistReleases = "ForArtist.Releases";
     public const string ForArtistGenres = "ForArtist.Genres";
     public const string ForArtistMoods = "ForArtist.Moods";
@@ -16,4 +18,5 @@ public static class Tags
 
     public const string AdminGenres = "Admin.Genres";
     public const string AdminMoods = "Admin.Moods";
+    public const string AdminSearchBackfill = "Admin.Search.Backfill";
 }
