@@ -1,5 +1,6 @@
 ﻿using Domain.Artists;
 using Domain.Playlists;
+using Domain.Roles;
 using Domain.Token;
 using SharedKernel;
 
@@ -15,6 +16,7 @@ public sealed class User : Entity
     public string ImageKey { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    public List<Role> Roles { get; set; } = new();
     public List<Playlist> Playlists { get; set; } = new();
     public List<RefreshToken> RefreshTokens { get; set; } = new();
     public List<Artist> Artists { get; set; } = new();
@@ -32,5 +34,11 @@ public sealed class User : Entity
             ImageKey = imageKey,
             CreatedAt = createdAt
         };
+    }
+
+    public static User AssignRole(User user, Role role)
+    {
+        user.Roles.Add(role);
+        return user;
     }
 }

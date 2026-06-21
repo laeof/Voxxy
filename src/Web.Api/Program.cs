@@ -2,6 +2,7 @@ using System.Reflection;
 using Application;
 using HealthChecks.UI.Client;
 using Infrastructure;
+using Infrastructure.Database;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Serilog;
 using Web.Api;
@@ -57,6 +58,8 @@ if (app.Environment.IsDevelopment())
 
     app.ApplySeeding();
 }
+
+await app.InitializePermissionsAsync();
 
 app.MapHealthChecks("health", new HealthCheckOptions
 {

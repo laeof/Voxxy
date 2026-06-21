@@ -13,16 +13,17 @@ internal sealed class Me : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("users/me", (IUserContext context) =>
-            Results.Ok(new MeResponse
-            {
-                Id = context.UserId,
-                Email = context.Email,
-                FullName = context.FullName,
-                ImageUrl = context.ImageUrl,
-                UserClaims = context.UserClaims,
-            })
-        )
+        app.MapGet("users/me", async (
+            IUserContext context,
+            IQueryHandler<MeQuery, MeResponse> handler,
+            CancellationToken cancellationToken) =>
+        {
+            var query = new MeQuery(context.UserId);
+
+            Result<MeResponse> result = await handler.Handle(query, cancellationToken);
+
+            return result.Match(Results.Ok, CustomResults.Problem);
+        })
         .WithTags(Tags.Users)
         .RequireAuthorization();
     }

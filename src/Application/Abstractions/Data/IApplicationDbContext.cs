@@ -4,7 +4,9 @@ using Domain.Follows;
 using Domain.Genres;
 using Domain.Moods;
 using Domain.OutboxMessages;
+using Domain.Permissions;
 using Domain.Playlists;
+using Domain.Roles;
 using Domain.Token;
 using Domain.Tracks;
 using Domain.Users;
@@ -25,6 +27,8 @@ public interface IApplicationDbContext
     DbSet<Mood> Moods { get; }
     DbSet<Release> Releases { get; }
     DbSet<OutboxMessage> OutboxMessages { get; }
+    DbSet<Permission> Permissions { get; }
+    DbSet<Role> Roles { get; }
 
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
     Task RollbackTransactionAsync(CancellationToken cancellationToken = default);

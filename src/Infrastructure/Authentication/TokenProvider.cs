@@ -27,7 +27,7 @@ internal sealed class TokenProvider(IMediaUrlResolver mediaUrlResolver, IConfigu
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Name, user.FirstName + " " + user.LastName),
-                new Claim(ClaimTypes.Uri, mediaUrlResolver.GetPublicUrl(AzureContainerNames.Users, user.ImageKey).ToString())
+                new Claim(ClaimTypes.Uri, mediaUrlResolver.GetPublicUrl(AzureContainerNames.Users, user.ImageKey).ToString()),
             ]),
             Expires = DateTime.UtcNow.AddMinutes(configuration.GetValue<int>("Jwt:ExpirationInMinutes")),
             SigningCredentials = credentials,

@@ -1,6 +1,8 @@
 ﻿using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Domain.Roles;
+using Domain.Roles.Enums;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -22,6 +24,8 @@ internal sealed class RegisterUserCommandHandler(
             return Result.Failure<Guid>(UserErrors.EmailNotUnique);
         }
 
+        Role role = await context.Roles.SingleAsync(r => r.Name == ApplicationRole.User, cancellationToken);
+
         var userId = Guid.NewGuid();
 
         var user = User.Create(
@@ -32,6 +36,8 @@ internal sealed class RegisterUserCommandHandler(
             passwordHasher.Hash(command.Password),
             assetsOptions.Value.ImageLogicUrl.Replace("{id}", userId.ToString()),
             DateTime.UtcNow);
+
+        user = User.AssignRole(user, role);
 
         user.Raise(new UserRegisteredDomainEvent(user.Id));
 

@@ -5,7 +5,9 @@ using Domain.Follows;
 using Domain.Genres;
 using Domain.Moods;
 using Domain.OutboxMessages;
+using Domain.Permissions;
 using Domain.Playlists;
+using Domain.Roles;
 using Domain.Token;
 using Domain.Tracks;
 using Domain.Users;
@@ -31,6 +33,8 @@ public sealed class ApplicationDbContext(
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<OutboxMessage> OutboxMessages { get; set; }
     public DbSet<Release> Releases { get; set; }
+    public DbSet<Permission> Permissions { get; set; }
+    public DbSet<Role> Roles { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -41,16 +45,6 @@ public sealed class ApplicationDbContext(
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        // When should you publish domain events?
-        //
-        // 1. BEFORE calling SaveChangesAsync
-        //     - domain events are part of the same transaction
-        //     - immediate consistency
-        // 2. AFTER calling SaveChangesAsync
-        //     - domain events are a separate transaction
-        //     - eventual consistency
-        //     - handlers can fail
-
         int result = await base.SaveChangesAsync(cancellationToken);
 
         await PublishDomainEventsAsync();
