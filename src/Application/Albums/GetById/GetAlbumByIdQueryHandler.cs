@@ -27,17 +27,29 @@ internal sealed class GetAlbumByIdQueryHandler(IApplicationDbContext context, IM
                 CreatedAt = album.ReleaseDate,
                 PrimaryColor = album.Color,
                 ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, album.ImageKey).ToString(),
-                CreatedBy = new ArtistResponse
+                CreatedBy = album.Artists.Select(artist => new ArtistResponse
                 {
-                    Id = album.Artists[0].Id,
-                    Name = album.Artists[0].Name,
-                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, album.Artists[0].ImageKey).ToString(),
-                    CreatedAt = album.Artists[0].CreatedAt,
-                },
-                Tracks = album.Tracks.Select(track => new TrackResponse
-                {
-                    Id = track.Id,
+                    Id = artist.Id,
+                    Name = artist.Name,
+                    ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, artist.ImageKey).ToString(),
                 }).ToList(),
+                Tracks = album.Tracks
+                    .OrderBy(track => track.AlbumOrder)
+                    .Select(track => new TrackResponse
+                    {
+                        Id = track.Id,
+                        AudioKey = track.AudioKey,
+                        ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, album.ImageKey).ToString(),
+                        Name = track.Name,
+                        Duration = track.Duration,
+                        Artists = album.Artists.Select(artist => new ArtistResponse
+                        {
+                            Id = artist.Id,
+                            Name = artist.Name,
+                            ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, artist.ImageKey).ToString(),
+                        }).ToList(),
+                        FromPlaylist = album.Id
+                    }).ToList(),
                 PlaylistType = (PlaylistType)album.Type,
             })
             .SingleOrDefaultAsync(cancellationToken);

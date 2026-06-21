@@ -2,15 +2,18 @@
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Media;
+using Application.Abstractions.Services;
 using Infrastructure.Authentication;
 using Infrastructure.Authorization;
 using Infrastructure.AzureBlobStorage;
 using Infrastructure.Database;
 using Infrastructure.DomainEvents;
 using Infrastructure.Time;
+using Meilisearch;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,7 +33,8 @@ public static class DependencyInjection
             .AddHealthChecks(configuration)
             .AddAuthenticationInternal(configuration)
             .AddAuthorizationInternal()
-            .AddAzureBlobStorage();
+            .AddAzureBlobStorage()
+            .AddMeiliSearch(configuration);
 
     private static IServiceCollection AddAzureBlobStorage(this IServiceCollection services)
     {
@@ -44,6 +48,12 @@ public static class DependencyInjection
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 
         services.AddTransient<IDomainEventsDispatcher, DomainEventsDispatcher>();
+
+        services.Scan(scan => scan.FromAssembliesOf(typeof(DependencyInjection))
+            .AddClasses(classes => classes.AssignableTo<IInfrastructureService>(), publicOnly: false)
+                    .As(type => type.GetInterfaces()
+                        .Where(i => i != typeof(IInfrastructureService)))
+                    .WithScopedLifetime());
 
         return services;
     }
@@ -59,6 +69,17 @@ public static class DependencyInjection
                 .UseSnakeCaseNamingConvention());
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+
+        return services;
+    }
+
+    private static IServiceCollection AddMeiliSearch(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddSingleton(_ =>
+            new MeilisearchClient(
+                configuration.GetConnectionString("MeiliSearchUrl")!,
+                configuration.GetConnectionString("MeiliSearchApiKey")!)
+        );
 
         return services;
     }

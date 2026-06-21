@@ -11,7 +11,7 @@ public sealed class AlbumResponse
     public string ImageUrl { get; set; }
     public string PrimaryColor { get; set; }
     public PlaylistType PlaylistType { get; set; }
-    public ArtistResponse CreatedBy { get; set; }
+    public List<ArtistResponse> CreatedBy { get; set; }
     public List<TrackResponse> Tracks { get; set; } = new();
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
