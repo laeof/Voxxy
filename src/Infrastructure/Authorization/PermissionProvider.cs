@@ -1,12 +1,19 @@
-﻿namespace Infrastructure.Authorization;
+﻿using Application.Abstractions.Data;
+using Domain.Roles;
 
-internal sealed class PermissionProvider
+namespace Infrastructure.Authorization;
+
+internal sealed class PermissionProvider(IApplicationDbContext context)
 {
     public Task<HashSet<string>> GetForUserIdAsync(Guid userId)
     {
-        // TODO: Here you'll implement your logic to fetch permissions.
-        HashSet<string> permissionsSet = [];
+        var permissions = context.Users
+            .Where(u => u.Id == userId)
+            .SelectMany(u => u.Roles)
+            .SelectMany(r => r.Permissions)
+            .Select(p => p.Value)
+            .ToHashSet();
 
-        return Task.FromResult(permissionsSet);
+        return Task.FromResult(permissions);
     }
 }

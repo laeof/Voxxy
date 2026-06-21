@@ -49,6 +49,14 @@ internal sealed class LoginUserCommandHandler(
 
         await context.SaveChangesAsync(cancellationToken);
 
+        List<string> permissions = await context.Users
+            .Where(u => u.Id == user.Id)
+            .SelectMany(u => u.Roles)
+            .SelectMany(role => role.Permissions)
+            .Select(permission => permission.Value)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
         LoginResponse response = new()
         {
             Me = new MeResponse
@@ -57,7 +65,7 @@ internal sealed class LoginUserCommandHandler(
                 Email = user.Email,
                 FullName = user.FirstName + " " + user.LastName,
                 ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Users, user.ImageKey).ToString(),
-                UserClaims = Array.Empty<string>()
+                UserClaims = permissions
             },
             AccessToken = token,
             RefreshToken = refreshToken,
