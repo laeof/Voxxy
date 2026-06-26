@@ -10,10 +10,11 @@
     <PackageVersion Include="Azure.Storage.Blobs" Version="12.26.0" />
     <PackageVersion Include="MeiliSearch" Version="0.18.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.1" />
     <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.15.0.120848" />
     <!-- Application -->
-    <PackageVersion Include="Scrutor" Version="6.1.0" />
+    <PackageVersion Include="Scrutor" Version="7.0.0" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.10" />
@@ -40,5 +41,7 @@
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <!-- Connect -->
+    <PackageVersion Include="StackExchange.Redis" Version="3.0.0" />
   </ItemGroup>
 </Project>

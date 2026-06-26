@@ -24,14 +24,15 @@ builder.Services
     .AddPresentation(builder.Configuration)
     .AddInfrastructure(builder.Configuration);
 
+builder.Services.AddApplicationModules(builder.Configuration);
+
 builder.Services.AddEndpoints(Assembly.GetExecutingAssembly());
 
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(
         policy => policy
             .WithOrigins(
-                "http://localhost:4200",
-                "http://192.168.1.235:4200"
+                builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()!
             )
             .AllowAnyHeader()
             .AllowAnyMethod()
@@ -51,6 +52,8 @@ builder.Services.AddAntiforgery(options =>
 WebApplication app = builder.Build();
 
 app.MapEndpoints();
+
+app.MapApplicationModules();
 
 if (app.Environment.IsDevelopment())
 {

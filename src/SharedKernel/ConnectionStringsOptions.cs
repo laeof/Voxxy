@@ -5,4 +5,5 @@ public sealed class ConnectionStringsOptions
     public string Database { get; init; } = default!;
     public string AzureStorage { get; init; } = default!;
     public string MeiliSearch { get; init; } = default!;
+    public string Redis { get; init; } = default!;
 }
