@@ -10,6 +10,11 @@ public sealed record PersistenceCommand(
     string Fingerprint,
     string Outcome);
 
+public sealed record CommandRecordCommit(
+    Guid UserId,
+    PersistenceCommand Command,
+    string? RegisteredConnectionId = null);
+
 public sealed record PlayerCommit(
     Guid UserId,
     PersistenceCommand Command,

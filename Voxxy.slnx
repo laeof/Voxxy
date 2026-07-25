@@ -23,6 +23,7 @@
     </Folder>
     <Folder Name="/tests/">
         <Project Path="tests/ArchitectureTests/ArchitectureTests.csproj" />
+        <Project Path="tests/Connect.Application.UnitTests/Connect.Application.UnitTests.csproj" />
         <Project Path="tests/Connect.Domain.UnitTests/Connect.Domain.UnitTests.csproj" />
         <Project Path="tests/Connect.Infrastructure.IntegrationTests/Connect.Infrastructure.IntegrationTests.csproj" />
     </Folder>

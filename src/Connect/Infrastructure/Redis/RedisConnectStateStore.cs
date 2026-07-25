@@ -100,6 +100,16 @@ public sealed class RedisConnectStateStore : IConnectStateStore
         }
     }
 
+    public Task<PersistenceCommitResult> TryRecordCommandAsync(
+        CommandRecordCommit commit,
+        CancellationToken cancellationToken = default) =>
+        CommitAsync(
+            commit.UserId,
+            commit.Command,
+            [],
+            commit.RegisteredConnectionId,
+            cancellationToken);
+
     public Task<PersistenceCommitResult> TryCommitPlayerAsync(
         PlayerCommit commit,
         CancellationToken cancellationToken = default) =>

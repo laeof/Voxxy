@@ -24,6 +24,10 @@ public interface IConnectStateStore
         DateTimeOffset serverTime,
         CancellationToken cancellationToken = default);
 
+    Task<PersistenceCommitResult> TryRecordCommandAsync(
+        CommandRecordCommit commit,
+        CancellationToken cancellationToken = default);
+
     Task<PersistenceCommitResult> TryCommitPlayerAsync(
         PlayerCommit commit,
         CancellationToken cancellationToken = default);

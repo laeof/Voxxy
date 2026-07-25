@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <IsPackable>false</IsPackable>
@@ -7,7 +7,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="NetArchTest.Rules" />
     <PackageReference Include="Shouldly" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio">
@@ -21,8 +20,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Connect\Application\Application.csproj" />
-    <ProjectReference Include="..\..\src\Web.Api\Web.Api.csproj" />
+    <ProjectReference Include="../../src/Connect/Application/Application.csproj" />
+    <ProjectReference Include="../../src/Connect/Contracts/Contracts.csproj" />
+    <ProjectReference Include="../../src/Connect/Domain/Domain.csproj" />
   </ItemGroup>
 
 </Project>
