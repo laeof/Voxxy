@@ -7,10 +7,12 @@ public sealed class SignalRBackplaneOptions
 {
     public const string SectionName = "SignalR:Backplane";
     public const string DefaultChannelPrefix = "voxxy:signalr";
+    public const int DefaultHealthTimeoutMilliseconds = 2_000;
 
     public bool Enabled { get; init; }
     public string? ConnectionString { get; init; }
     public string ChannelPrefix { get; init; } = DefaultChannelPrefix;
+    public int HealthTimeoutMilliseconds { get; init; } = DefaultHealthTimeoutMilliseconds;
 
     public static SignalRBackplaneOptions FromConfiguration(IConfiguration configuration)
     {
@@ -20,11 +22,18 @@ public sealed class SignalRBackplaneOptions
             section[nameof(ConnectionString)] ?? configuration.GetConnectionString("Redis");
         string channelPrefix =
             section[nameof(ChannelPrefix)] ?? DefaultChannelPrefix;
+        int healthTimeoutMilliseconds =
+            int.TryParse(
+                section[nameof(HealthTimeoutMilliseconds)],
+                out int configuredHealthTimeout)
+                ? configuredHealthTimeout
+                : DefaultHealthTimeoutMilliseconds;
         var options = new SignalRBackplaneOptions
         {
             Enabled = enabled,
             ConnectionString = connectionString,
-            ChannelPrefix = channelPrefix
+            ChannelPrefix = channelPrefix,
+            HealthTimeoutMilliseconds = healthTimeoutMilliseconds
         };
         options.Validate();
         return options;
@@ -37,7 +46,9 @@ public sealed class SignalRBackplaneOptions
             throw new InvalidOperationException(
                 "SignalR Redis backplane channel prefix is required.");
         }
-        if (ChannelPrefix.StartsWith("connect:v2", StringComparison.Ordinal))
+        string normalizedPrefix = ChannelPrefix.Trim();
+        if (normalizedPrefix.Equals("connect:v2", StringComparison.OrdinalIgnoreCase) ||
+            normalizedPrefix.StartsWith("connect:v2:", StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException(
                 "SignalR Redis backplane must not use the Connect persistence namespace.");
@@ -47,6 +58,25 @@ public sealed class SignalRBackplaneOptions
             throw new InvalidOperationException(
                 "SignalR Redis backplane connection string is required when enabled.");
         }
+        if (HealthTimeoutMilliseconds <= 0)
+        {
+            throw new InvalidOperationException(
+                "SignalR Redis backplane health timeout must be greater than zero.");
+        }
+        if (Enabled)
+        {
+            _ = ParseRedisConfiguration();
+        }
+    }
+
+    public ConfigurationOptions ParseRedisConfiguration()
+    {
+        var configuration =
+            ConfigurationOptions.Parse(ConnectionString ?? string.Empty);
+        configuration.AbortOnConnectFail = false;
+        configuration.ConnectTimeout = HealthTimeoutMilliseconds;
+        configuration.SyncTimeout = HealthTimeoutMilliseconds;
+        return configuration;
     }
 
     public string RedisEndpoint
@@ -58,8 +88,7 @@ public sealed class SignalRBackplaneOptions
                 return "not-configured";
             }
 
-            var configuration =
-                ConfigurationOptions.Parse(ConnectionString);
+            ConfigurationOptions configuration = ParseRedisConfiguration();
             return string.Join(",", configuration.EndPoints.Select(endpoint => endpoint.ToString()));
         }
     }

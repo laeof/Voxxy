@@ -3,6 +3,7 @@ using Connect.Infrastructure;
 using Connect.Presentation.Endpoints;
 using Connect.Presentation.Hubs;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,7 +24,9 @@ public static class ConnectModule
     public static IEndpointRouteBuilder MapConnectModule(this IEndpointRouteBuilder app)
     {
         app.MapConnectEndpoints();
-        app.MapHub<PlayerHub>("/api/hubs/connect");
+        app.MapHub<PlayerHub>(
+            "/api/hubs/connect",
+            options => options.Transports = HttpTransportType.WebSockets);
 
         return app;
     }

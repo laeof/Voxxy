@@ -337,6 +337,41 @@ public sealed class PlayerHubTests
         facade.Calls.ShouldBe(1);
     }
 
+    [Fact]
+    public async Task DeliveryUnconfirmed_SameCommandRetryIsDuplicate_AndSnapshotHasCommittedState()
+    {
+        (PlayerHub hub, TestConnectCommandFacade facade, TestBroadcaster broadcaster, _) =
+            CreateHub();
+        var commandId = Guid.NewGuid();
+        PlayerStateDto committedPlayer = Player(3);
+        facade.Results.Enqueue(new ConnectApplicationResult(
+            ConnectCommandStatus.Applied,
+            Player: committedPlayer,
+            Outcome: new ConnectCommandOutcome(PlayerVersion: 3)));
+        facade.Results.Enqueue(new ConnectApplicationResult(ConnectCommandStatus.Duplicate));
+        facade.Results.Enqueue(new ConnectApplicationResult(
+            ConnectCommandStatus.Applied,
+            Snapshot: new ConnectSnapshot(
+                UserId,
+                committedPlayer,
+                Queue(1),
+                Presence(1),
+                Now)));
+        broadcaster.Exception = new InvalidOperationException("backplane unavailable");
+
+        HubException exception = await Should.ThrowAsync<HubException>(() =>
+            hub.Play(new CommandRequest(commandId)));
+        broadcaster.Exception = null;
+        ConnectCommandAck duplicate = await hub.Play(new CommandRequest(commandId));
+        ConnectSnapshotResponse snapshot = await hub.GetSnapshot();
+
+        exception.Message.ShouldBe("connect_delivery_unconfirmed");
+        duplicate.Status.ShouldBe(ConnectCommandAckStatus.Duplicate);
+        snapshot.Player!.Version.ShouldBe(3);
+        facade.Calls.ShouldBe(3);
+        broadcaster.Calls.ShouldBe(0);
+    }
+
     private static (
         PlayerHub Hub,
         TestConnectCommandFacade Facade,

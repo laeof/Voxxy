@@ -28,6 +28,7 @@ public sealed class MultiInstanceFixture : IAsyncLifetime
 
     public TestConnectHost Instance1 { get; private set; } = null!;
     public TestConnectHost Instance2 { get; private set; } = null!;
+    public string RedisConnectionString => _redis.GetConnectionString();
 
     public async Task InitializeAsync()
     {
@@ -123,10 +124,12 @@ public class FacadeProxy : DispatchProxy
     public ConnectApplicationResult Result { get; set; } =
         new(ConnectCommandStatus.NoChanges);
     public int Calls { get; private set; }
+    public object?[]? LastArguments { get; private set; }
 
     protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
     {
         Calls++;
+        LastArguments = args;
         return Task.FromResult(Result);
     }
 }

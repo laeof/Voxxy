@@ -27,6 +27,10 @@ builder.Services
 builder.Services.AddApplicationModules(builder.Configuration);
 
 builder.Services.AddEndpoints(Assembly.GetExecutingAssembly());
+builder.Services.AddHealthChecks().AddCheck(
+    "self",
+    () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy(),
+    tags: ["live"]);
 
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(
@@ -66,6 +70,16 @@ await app.InitializePermissionsAsync();
 
 app.MapHealthChecks("health", new HealthCheckOptions
 {
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+app.MapHealthChecks("health/live", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("live"),
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+app.MapHealthChecks("health/ready", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("ready"),
     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
 });
 

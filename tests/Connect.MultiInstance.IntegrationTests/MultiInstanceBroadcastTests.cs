@@ -187,6 +187,59 @@ public sealed class MultiInstanceBroadcastTests(MultiInstanceFixture fixture)
         snapshot.Presence!.Version.ShouldBe(9);
     }
 
+    [Fact]
+    public async Task ReconnectToInstance2_PreservesDeviceId_ChangesConnection_AndReceivesEvents()
+    {
+        var userId = Guid.NewGuid();
+        var deviceId = Guid.NewGuid();
+        await using HubConnection first = CreateClient(fixture.Instance1, userId);
+        await first.StartAsync();
+        string firstConnectionId = first.ConnectionId!;
+        await first.InvokeAsync<ConnectCommandAck>(
+            "RegisterConnection",
+            new RegisterConnectionRequest(Guid.NewGuid(), deviceId, "Browser"));
+        await first.StopAsync();
+
+        fixture.Instance2.Facade.Result = new ConnectApplicationResult(
+            ConnectCommandStatus.Applied,
+            Snapshot: new ConnectSnapshot(
+                userId,
+                Player(7),
+                Queue(8),
+                new PresenceStateDto([], deviceId, firstConnectionId, 9),
+                Now));
+        await using HubConnection second = CreateClient(fixture.Instance2, userId);
+        TaskCompletionSource<PlayerStateChangedEvent> futureEvent =
+            Completion<PlayerStateChangedEvent>();
+        second.On<PlayerStateChangedEvent>("PlayerStateChanged", futureEvent.SetResult);
+        await second.StartAsync();
+        string secondConnectionId = second.ConnectionId!;
+        ConnectSnapshotResponse snapshot =
+            await second.InvokeAsync<ConnectSnapshotResponse>("GetSnapshot");
+        fixture.Instance2.Facade.Result = new ConnectApplicationResult(
+            ConnectCommandStatus.Applied,
+            Presence: new PresenceStateDto([], deviceId, secondConnectionId, 10));
+        await second.InvokeAsync<ConnectCommandAck>(
+            "RegisterConnection",
+            new RegisterConnectionRequest(Guid.NewGuid(), deviceId, "Browser"));
+
+        await PublishUntilReceivedAsync(
+            () => fixture.Instance2.Broadcaster.BroadcastAsync(
+                userId,
+                Guid.NewGuid(),
+                Applied(player: Player(8)),
+                default),
+            futureEvent.Task);
+
+        secondConnectionId.ShouldNotBe(firstConnectionId);
+        snapshot.Presence!.AudioOwnerConnectionId.ShouldBe(firstConnectionId);
+        snapshot.Presence.AudioOwnerConnectionId.ShouldNotBe(secondConnectionId);
+        var registration = (Connect.Application.Commands.RegisterConnectionCommand)
+            fixture.Instance2.Facade.LastArguments![0]!;
+        registration.DeviceId.ShouldBe(deviceId);
+        (await futureEvent.Task.WaitAsync(Timeout)).Player.Version.ShouldBe(8);
+    }
+
     private static HubConnection CreateClient(TestConnectHost host, Guid userId) =>
         new HubConnectionBuilder()
             .WithUrl(

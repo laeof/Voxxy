@@ -33,14 +33,18 @@ public static class DependencyInjection
                 {
                     redis.Configuration.ChannelPrefix =
                         RedisChannel.Literal(backplaneOptions.ChannelPrefix);
-                    redis.Configuration.AbortOnConnectFail = true;
+                    // A syntactically valid but temporarily unavailable Redis endpoint is a
+                    // readiness failure. The official backplane owns reconnect recovery.
+                    redis.Configuration.AbortOnConnectFail = false;
                 });
         }
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton(backplaneOptions);
         services.AddHostedService<SignalRBackplaneStartupLogger>();
         services.AddHealthChecks()
-            .AddCheck<SignalRBackplaneHealthCheck>("signalr-redis");
+            .AddCheck<SignalRBackplaneHealthCheck>(
+                "signalr-backplane",
+                tags: ["ready", "signalr", "redis"]);
         services.AddSingleton(cleanupOptions);
         services.AddSingleton<ConnectCleanupMetrics>();
         services.AddScoped<IConnectCommandFacade, ConnectCommandFacade>();

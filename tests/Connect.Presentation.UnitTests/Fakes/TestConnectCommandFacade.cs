@@ -11,6 +11,7 @@ internal sealed class TestConnectCommandFacade : IConnectCommandFacade
     public ConnectApplicationResult Result { get; set; } =
         new(ConnectCommandStatus.NoChanges);
     public Exception? Exception { get; set; }
+    public Queue<ConnectApplicationResult> Results { get; } = new();
 
     public Task<ConnectApplicationResult> RegisterAsync(
         RegisterConnectionCommand command,
@@ -110,8 +111,9 @@ internal sealed class TestConnectCommandFacade : IConnectCommandFacade
         cancellationToken.ThrowIfCancellationRequested();
         Calls++;
         LastCommand = command;
+        ConnectApplicationResult result = Results.Count > 0 ? Results.Dequeue() : Result;
         return Exception is null
-            ? Task.FromResult(Result)
+            ? Task.FromResult(result)
             : Task.FromException<ConnectApplicationResult>(Exception);
     }
 }

@@ -157,4 +157,17 @@ public sealed class ConnectLayerTests
         group.ShouldStartWith("connect:user:");
         group.Contains("instance", StringComparison.OrdinalIgnoreCase).ShouldBeFalse();
     }
+
+    [Fact]
+    public void BackplaneHealth_MustNotDependOnConnectPersistence()
+    {
+        TestResult result = Types.InAssembly(typeof(Connect.Presentation.DependencyInjection).Assembly)
+            .That()
+            .HaveName("SignalRBackplaneHealthCheck")
+            .Should()
+            .NotHaveDependencyOn("Connect.Infrastructure.Redis")
+            .GetResult();
+
+        result.IsSuccessful.ShouldBeTrue();
+    }
 }
