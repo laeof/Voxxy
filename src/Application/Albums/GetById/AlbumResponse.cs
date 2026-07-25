@@ -1,5 +1,5 @@
 using Application.Artists.GetById;
-using Application.Tracks.GetById;
+using Application.Tracks.Batch;
 using SharedKernel.Enums;
 
 namespace Application.Albums.GetById;

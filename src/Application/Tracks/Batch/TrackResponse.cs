@@ -2,7 +2,7 @@ using Application.Albums.GetById;
 using Application.Artists.GetById;
 using Domain.Artists;
 
-namespace Application.Tracks.GetById;
+namespace Application.Tracks.Batch;
 
 public sealed class TrackResponse
 {

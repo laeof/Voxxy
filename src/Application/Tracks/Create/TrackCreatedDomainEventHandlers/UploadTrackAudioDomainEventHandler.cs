@@ -26,6 +26,13 @@ internal sealed class UploadTrackAudioDomainEventHandler : IDomainEventHandler<T
 
         await blob.UploadAsync(
             domainEvent.AudioStream,
+            new BlobUploadOptions
+            {
+                HttpHeaders = new BlobHttpHeaders
+                {
+                    ContentType = "audio/mpeg"
+                }
+            },
             cancellationToken: cancellationToken);
     }
 }

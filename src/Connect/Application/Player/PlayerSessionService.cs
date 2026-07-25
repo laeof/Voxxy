@@ -32,18 +32,18 @@ public sealed class PlayerSessionService : IPlayerSessionService
         return state;
     }
 
-    public async Task<PlayerState> PauseAsync(Guid userId)
+    public async Task<PlayerState> PauseAsync(Guid userId, PlayRequest request)
     {
         PlayerState state = await GetStateAsync(userId);
 
-        state.Stop();
+        state.Stop(request.TrackId, request.QueueId, request.PositionMs, request.UpdatedAt);
 
         await _repository.SetValueAsync(userId, state);
 
         return state;
     }
 
-    public async Task<PlayerState> ChangePositionAsync(Guid userId, PlayRequest request)
+    public async Task<PlayerState> ChangePositionAsync(Guid userId, PositionRequest request)
     {
         PlayerState state = await GetStateAsync(userId);
 

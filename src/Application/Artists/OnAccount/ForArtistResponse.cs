@@ -1,6 +1,6 @@
 using Application.Albums.GetById;
 using Application.Artists.GetById;
-using Application.Tracks.GetById;
+using Application.Tracks.Batch;
 
 namespace Application.Artists.OnAccount;
 

@@ -5,7 +5,7 @@ using Application.Abstractions.Messaging;
 using Application.Albums.GetById;
 using Application.Artists.GetById;
 using Application.Playlists.GetById;
-using Application.Tracks.GetById;
+using Application.Tracks.Batch;
 using Domain.Follows;
 using Domain.Playlists;
 using Domain.Users;

@@ -43,7 +43,11 @@ internal static class TestEndpoint
         {
             var userId = Guid.Parse("33358d2f-d8f2-4419-b34e-6a7be9e0b10b");
 
-            PlayerState state = await playerSessionService.PauseAsync(userId);
+            var playRequest = new PlayRequest
+            {
+            };
+
+            PlayerState state = await playerSessionService.PauseAsync(userId, playRequest);
 
             await hubContext.Clients
                 .Group($"user:{userId}")

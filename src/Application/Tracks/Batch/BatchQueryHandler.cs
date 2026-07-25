@@ -4,7 +4,6 @@ using Application.Abstractions.Media;
 using Application.Abstractions.Messaging;
 using Application.Albums.GetById;
 using Application.Artists.GetById;
-using Application.Tracks.GetById;
 using Application.Users.GetByEmail;
 using Domain.Playlists;
 using Domain.Tracks;
@@ -13,15 +12,15 @@ using SharedKernel;
 using SharedKernel.Constants;
 using SharedKernel.Enums;
 
-namespace Application.Tracks.GetById;
+namespace Application.Tracks.Batch;
 
-internal sealed class GetTrackByIdQueryHandler(IApplicationDbContext context, IMediaUrlResolver mediaUrlResolver)
-    : IQueryHandler<GetTrackByIdQuery, TrackResponse>
+internal sealed class BatchQueryHandler(IApplicationDbContext context, IMediaUrlResolver mediaUrlResolver)
+    : IQueryHandler<BatchQuery, List<TrackResponse>>
 {
-    public async Task<Result<TrackResponse>> Handle(GetTrackByIdQuery query, CancellationToken cancellationToken)
+    public async Task<Result<List<TrackResponse>>> Handle(BatchQuery query, CancellationToken cancellationToken)
     {
-        TrackResponse? track = await context.Tracks
-            .Where(track => track.Id == query.TrackId)
+        List<TrackResponse> tracks = await context.Tracks
+            .Where(track => query.TrackIds.Contains(track.Id))
             .Select(track => new TrackResponse
             {
                 Id = track.Id,
@@ -45,13 +44,8 @@ internal sealed class GetTrackByIdQueryHandler(IApplicationDbContext context, IM
                 }).ToList()
 
             })
-            .SingleOrDefaultAsync(cancellationToken);
+            .ToListAsync(cancellationToken);
 
-        if (track is null)
-        {
-            return Result.Failure<TrackResponse>(TrackErrors.NotFound(query.TrackId));
-        }
-
-        return track;
+        return tracks;
     }
 }

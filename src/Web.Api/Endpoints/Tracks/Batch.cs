@@ -1,5 +1,5 @@
 using Application.Abstractions.Messaging;
-using Application.Tracks.GetById;
+using Application.Tracks.Batch;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel;
 using Web.Api.Extensions;
@@ -7,18 +7,19 @@ using Web.Api.Infrastructure;
 
 namespace Web.Api.Endpoints.Tracks;
 
-internal sealed class GetById : IEndpoint
+internal sealed class Batch : IEndpoint
 {
+    public sealed record TrackBatchRequest(List<Guid> TrackIds);
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("tracks/{id:guid}", async (
-            Guid id,
-            IQueryHandler<GetTrackByIdQuery, TrackResponse> handler,
+        app.MapPost("tracks/batch", async (
+            TrackBatchRequest request,
+            IQueryHandler<BatchQuery, List<TrackResponse>> handler,
             CancellationToken cancellationToken) =>
         {
-            var command = new GetTrackByIdQuery(id);
+            var query = new BatchQuery(request.TrackIds);
 
-            Result<TrackResponse> result = await handler.Handle(command, cancellationToken);
+            Result<List<TrackResponse>> result = await handler.Handle(query, cancellationToken);
 
             return result.Match(Results.Ok, CustomResults.Problem);
         })

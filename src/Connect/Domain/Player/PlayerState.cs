@@ -33,9 +33,13 @@ public sealed class PlayerState
         UpdatedAt = updatedAt;
     }
 
-    public void Stop()
+    public void Stop(Guid? trackId, Guid? queueId, int positionMs, DateTimeOffset updatedAt)
     {
         IsPlaying = false;
+        TrackId = trackId;
+        QueueId = queueId;
+        PositionMs = positionMs;
+        UpdatedAt = updatedAt;
     }
 
     public void ConnectToDevice(string connectionId)

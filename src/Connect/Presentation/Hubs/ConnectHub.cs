@@ -35,13 +35,6 @@ public sealed class PlayerHub : Hub<IPlayerClient>
         await Groups.AddToGroupAsync(Context.ConnectionId, $"{TableConstants.PlayerSessionTable}:{userId}");
         await Groups.AddToGroupAsync(Context.ConnectionId, $"{TableConstants.QueuePlaybackTable}:{userId}");
         await Groups.AddToGroupAsync(Context.ConnectionId, $"{TableConstants.DeviceTable}:{userId}");
-
-        PlayerState state = await _playerSessionService.GetStateAsync(Guid.Parse(userId));
-
-        if (state is not null)
-        {
-            await Clients.Group($"{TableConstants.PlayerSessionTable}:{userId}").ActiveDeviceChanged(state.ActiveDeviceId!);
-        }
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
@@ -79,13 +72,16 @@ public sealed class PlayerHub : Hub<IPlayerClient>
 
         device = await _deviceService.GetOnlineDevicesAsync(userId);
 
-        //if there is no any online device we should connect it
-        if (device.Items.Count == 1)
+        PlayerState state = await _playerSessionService.GetStateAsync(userId);
+
+        if (string.IsNullOrEmpty(state.ActiveDeviceId))
         {
             await ConnectDeviceToPlayer(userId, Context.ConnectionId);
+            state = await _playerSessionService.GetStateAsync(userId);
         }
 
         await Clients.Group($"{TableConstants.DeviceTable}:{userId}").DeviceListChanged(device);
+        await Clients.Group($"{TableConstants.PlayerSessionTable}:{userId}").ActiveDeviceChanged(state.ActiveDeviceId!);
     }
 
     public async Task RegisterPlayer()
@@ -96,7 +92,7 @@ public sealed class PlayerHub : Hub<IPlayerClient>
 
         state ??= await _playerSessionService.CreateSessionAsync(userId);
 
-        await Clients.Caller.PlayerStateChanged(state);
+        await Clients.Group($"{TableConstants.PlayerSessionTable}:{userId}").PlayerStateChanged(state);
     }
 
     public async Task RegisterQueue()
@@ -119,22 +115,22 @@ public sealed class PlayerHub : Hub<IPlayerClient>
         await Clients.Group($"{TableConstants.PlayerSessionTable}:{userId}").PlayerStateChanged(state);
     }
 
-    public async Task Pause()
+    public async Task Pause(PlayRequest request)
     {
-        string userId = Context.UserIdentifier!;
+        var userId = Guid.Parse(Context.UserIdentifier!);
 
-        PlayerState state = await _playerSessionService.PauseAsync(Guid.Parse(userId));
+        PlayerState state = await _playerSessionService.PauseAsync(userId, request);
 
         await Clients.Group($"{TableConstants.PlayerSessionTable}:{userId}").PlayerStateChanged(state);
     }
 
-    public async Task ChangePosition(PlayRequest request)
+    public async Task ChangePosition(PositionRequest request)
     {
         string userId = Context.UserIdentifier!;
 
         PlayerState state = await _playerSessionService.ChangePositionAsync(Guid.Parse(userId), request);
 
-        await Clients.Group($"{TableConstants.PlayerSessionTable}:{userId}").PlayerStateChanged(state);
+        await Clients.Group($"{TableConstants.PlayerSessionTable}:{userId}").PositionChanged(state.PositionMs, state.UpdatedAt);
     }
 
     public async Task ConnectToDevice(string connectionId)
@@ -152,7 +148,7 @@ public sealed class PlayerHub : Hub<IPlayerClient>
 
         PlayerState state = await _playerSessionService.ChangeVolumeAsync(Guid.Parse(userId), volume);
 
-        await Clients.Group($"{TableConstants.PlayerSessionTable}:{userId}").PlayerStateChanged(state);
+        await Clients.Group($"{TableConstants.PlayerSessionTable}:{userId}").VolumeChanged(state.VolumePercent);
     }
 
     public async Task AddTracksToQueue(List<QueueTrack> tracks)
