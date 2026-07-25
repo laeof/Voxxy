@@ -68,7 +68,14 @@ public sealed class QueueState
             throw new ArgumentException("Queue item ID is required.", nameof(queueItemId));
         }
 
-        if (_items.Any(item => item.QueueItemId == queueItemId))
+        QueueItem? existing = _items.FirstOrDefault(
+            item => item.QueueItemId == queueItemId);
+        if (existing is not null && existing.TrackId == trackId)
+        {
+            return existing;
+        }
+
+        if (existing is not null)
         {
             throw new InvalidOperationException("Queue item ID must be unique.");
         }
@@ -99,7 +106,16 @@ public sealed class QueueState
 
     public RemoveQueueItemResult Remove(Guid queueItemId)
     {
-        int index = IndexOf(queueItemId);
+        int index = _items.FindIndex(item => item.QueueItemId == queueItemId);
+        if (index < 0)
+        {
+            return new RemoveQueueItemResult(
+                false,
+                false,
+                CurrentItem,
+                _items.Count == 0);
+        }
+
         bool removedCurrentItem = CurrentQueueItemId == queueItemId;
 
         _items.RemoveAt(index);

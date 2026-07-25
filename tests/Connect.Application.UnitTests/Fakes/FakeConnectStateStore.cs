@@ -12,6 +12,9 @@ internal sealed class FakeConnectStateStore : IConnectStateStore
     public int ReadPresenceCalls { get; private set; }
     public int ReadSnapshotCalls { get; private set; }
     public int RecordCommandCalls { get; private set; }
+    public int CommitPlayerCalls { get; private set; }
+    public int CommitQueueCalls { get; private set; }
+    public int CommitPlayerQueueCalls { get; private set; }
     public int CommitPresenceCalls { get; private set; }
     public int CommitPlayerPresenceCalls { get; private set; }
     public int RefreshLeaseCalls { get; private set; }
@@ -92,6 +95,7 @@ internal sealed class FakeConnectStateStore : IConnectStateStore
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        CommitPlayerCalls++;
         return Task.FromResult(
             CommitPlayer?.Invoke(commit) ??
             throw new InvalidOperationException("CommitPlayer was not configured."));
@@ -102,6 +106,7 @@ internal sealed class FakeConnectStateStore : IConnectStateStore
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        CommitQueueCalls++;
         return Task.FromResult(
             CommitQueue?.Invoke(commit) ??
             throw new InvalidOperationException("CommitQueue was not configured."));
@@ -123,6 +128,7 @@ internal sealed class FakeConnectStateStore : IConnectStateStore
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        CommitPlayerQueueCalls++;
         return Task.FromResult(
             CommitPlayerQueue?.Invoke(commit) ??
             throw new InvalidOperationException("CommitPlayerQueue was not configured."));

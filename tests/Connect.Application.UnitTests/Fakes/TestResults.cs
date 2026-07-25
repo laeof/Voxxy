@@ -13,11 +13,25 @@ internal static class TestResults
     public static PersistenceReadResult<PresenceState> Presence(PresenceState state) =>
         new(PersistenceStatus.Success, state, null);
 
+    public static PersistenceReadResult<PlayerState> Player(PlayerState state) =>
+        new(PersistenceStatus.Success, state, null);
+
+    public static PersistenceReadResult<QueueState> Queue(QueueState state) =>
+        new(PersistenceStatus.Success, state, null);
+
     public static ConnectSnapshotReadResult Snapshot(
         PlayerState player,
         PresenceState presence) =>
         new(
             PersistenceStatus.Success,
             new ConnectSnapshotState(player, new QueueState(), presence),
+            null);
+
+    public static ConnectSnapshotReadResult Snapshot(
+        PlayerState player,
+        QueueState queue) =>
+        new(
+            PersistenceStatus.Success,
+            new ConnectSnapshotState(player, queue, new PresenceState()),
             null);
 }

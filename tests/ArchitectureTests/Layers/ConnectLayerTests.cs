@@ -35,4 +35,17 @@ public sealed class ConnectLayerTests
 
         result.IsSuccessful.ShouldBeTrue();
     }
+
+    [Fact]
+    public void ConnectPlayerQueueHandlers_MustNotReferenceInfrastructure()
+    {
+        TestResult result = Types.InAssembly(ConnectApplicationAssembly)
+            .That()
+            .ResideInNamespace("Connect.Application.PlayerQueue")
+            .Should()
+            .NotHaveDependencyOn("Connect.Infrastructure")
+            .GetResult();
+
+        result.IsSuccessful.ShouldBeTrue();
+    }
 }

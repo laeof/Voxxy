@@ -91,6 +91,72 @@ internal static class CommandValidation
             : null;
     }
 
+    public static string? Validate(PlayCommand command) =>
+        ValidateCommand(command.UserId, command.CommandId);
+
+    public static string? Validate(PauseCommand command) =>
+        ValidateCommand(command.UserId, command.CommandId);
+
+    public static string? Validate(ChangePositionCommand command)
+    {
+        string? common = ValidateCommand(command.UserId, command.CommandId);
+        return common ?? (command.PositionMs < 0 ? "Position cannot be negative." : null);
+    }
+
+    public static string? Validate(ChangeVolumeCommand command) =>
+        ValidateCommand(command.UserId, command.CommandId);
+
+    public static string? Validate(AddQueueItemCommand command)
+    {
+        string? common = ValidateCommand(command.UserId, command.CommandId);
+        if (common is not null)
+        {
+            return common;
+        }
+
+        if (command.QueueItemId == Guid.Empty)
+        {
+            return "Queue item ID is required.";
+        }
+
+        return command.TrackId == Guid.Empty ? "Track ID is required." : null;
+    }
+
+    public static string? Validate(RemoveQueueItemCommand command) =>
+        ValidateQueueItemCommand(command.UserId, command.CommandId, command.QueueItemId);
+
+    public static string? Validate(MoveQueueItemCommand command)
+    {
+        string? common = ValidateQueueItemCommand(
+            command.UserId,
+            command.CommandId,
+            command.QueueItemId);
+        return common ?? (command.TargetIndex < 0 ? "Target index cannot be negative." : null);
+    }
+
+    public static string? Validate(SelectQueueItemCommand command) =>
+        ValidateQueueItemCommand(command.UserId, command.CommandId, command.QueueItemId);
+
+    public static string? Validate(ShuffleQueueCommand command) =>
+        ValidateCommand(command.UserId, command.CommandId);
+
+    public static string? Validate(UnshuffleQueueCommand command) =>
+        ValidateCommand(command.UserId, command.CommandId);
+
+    public static string? Validate(ChangeRepeatModeCommand command)
+    {
+        string? common = ValidateCommand(command.UserId, command.CommandId);
+        return common ?? (!Enum.IsDefined(command.RepeatMode)
+            ? $"Repeat mode '{command.RepeatMode}' is not defined."
+            : null);
+    }
+
+    public static string? Validate(NextQueueItemCommand command) =>
+        ValidateCommand(command.UserId, command.CommandId);
+
+    public static string? Validate(PreviousQueueItemCommand command) =>
+        ValidateCommand(command.UserId, command.CommandId);
+
     private static string? ValidateCommand(Guid userId, Guid commandId)
     {
         if (userId == Guid.Empty)
@@ -99,5 +165,14 @@ internal static class CommandValidation
         }
 
         return commandId == Guid.Empty ? "Command ID is required." : null;
+    }
+
+    private static string? ValidateQueueItemCommand(
+        Guid userId,
+        Guid commandId,
+        Guid queueItemId)
+    {
+        string? common = ValidateCommand(userId, commandId);
+        return common ?? (queueItemId == Guid.Empty ? "Queue item ID is required." : null);
     }
 }

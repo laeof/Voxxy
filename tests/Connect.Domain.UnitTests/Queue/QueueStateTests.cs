@@ -266,6 +266,47 @@ public sealed class QueueStateTests
         queue.Version.ShouldBe(0);
     }
 
+    [Fact]
+    public void Remove_UnknownItem_IsNoOp()
+    {
+        var queue = new QueueState();
+        queue.Add(Guid.NewGuid());
+        long version = queue.Version;
+
+        RemoveQueueItemResult result = queue.Remove(Guid.NewGuid());
+
+        result.Removed.ShouldBeFalse();
+        queue.Version.ShouldBe(version);
+        queue.Items.Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Add_RepeatedIdentityAndTrack_IsNoOp()
+    {
+        var queue = new QueueState();
+        var queueItemId = Guid.NewGuid();
+        var trackId = Guid.NewGuid();
+        QueueItem original = queue.Add(trackId, queueItemId);
+        long version = queue.Version;
+
+        QueueItem repeated = queue.Add(trackId, queueItemId);
+
+        repeated.ShouldBeSameAs(original);
+        queue.Version.ShouldBe(version);
+        queue.Items.Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Add_RepeatedIdentityWithDifferentTrack_IsRejected()
+    {
+        var queue = new QueueState();
+        var queueItemId = Guid.NewGuid();
+        queue.Add(Guid.NewGuid(), queueItemId);
+
+        Should.Throw<InvalidOperationException>(() =>
+            queue.Add(Guid.NewGuid(), queueItemId));
+    }
+
     private static QueueState QueueWithThreeSelectedAt(int selectedIndex)
     {
         var queue = new QueueState();
