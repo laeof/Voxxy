@@ -3,15 +3,127 @@ using Connect.Contracts.States;
 using Connect.Presentation.Transport;
 using Microsoft.AspNetCore.SignalR.Client;
 using Shouldly;
+using Xunit.Abstractions;
 
 namespace Connect.MultiInstance.IntegrationTests;
 
 [Collection(MultiInstanceCollection.Name)]
-public sealed class MultiInstanceBroadcastTests(MultiInstanceFixture fixture)
+public sealed class MultiInstanceBroadcastTests(
+    MultiInstanceFixture fixture,
+    ITestOutputHelper output)
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(5);
     private static readonly DateTimeOffset Now =
         new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
+
+    [Fact]
+    public async Task CiLoadProfile_ConnectsRegistersSnapshotsAndHeartbeats()
+    {
+        const int connectionCount = 20;
+        HubConnection[] clients = Enumerable.Range(0, connectionCount)
+            .Select(index => CreateClient(
+                index % 2 == 0 ? fixture.Instance1 : fixture.Instance2,
+                Guid.NewGuid()))
+            .ToArray();
+        try
+        {
+            double[] connectLatency = await MeasureAllAsync(
+                clients.Select(client => (Func<Task>)(() => client.StartAsync())));
+            fixture.Instance1.Facade.Result = new ConnectApplicationResult(
+                ConnectCommandStatus.Applied,
+                Snapshot: new ConnectSnapshot(
+                    Guid.NewGuid(),
+                    Player(1),
+                    Queue(1),
+                    Presence(1),
+                    Now));
+            fixture.Instance2.Facade.Result = fixture.Instance1.Facade.Result;
+
+            double[] registrationLatency = await MeasureAllAsync(
+                clients.Select((client, index) => (Func<Task>)(async () =>
+                    await client.InvokeAsync<ConnectCommandAck>(
+                    "RegisterConnection",
+                    new RegisterConnectionRequest(
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        $"CI device {index}")))));
+            double[] snapshotLatency = await MeasureAllAsync(
+                clients.Select(client => (Func<Task>)(async () =>
+                    await client.InvokeAsync<ConnectSnapshotResponse>("GetSnapshot"))));
+            double[] heartbeatLatency = await MeasureAllAsync(
+                clients.Select(client => (Func<Task>)(async () =>
+                    await client.InvokeAsync<ConnectCommandAck>("RefreshConnectionLease"))));
+
+            output.WriteLine(
+                "CI_LOAD connect={0} register={1} snapshot={2} heartbeat={3}",
+                Summary(connectLatency),
+                Summary(registrationLatency),
+                Summary(snapshotLatency),
+                Summary(heartbeatLatency));
+            connectLatency.Length.ShouldBe(connectionCount);
+            registrationLatency.Length.ShouldBe(connectionCount);
+            snapshotLatency.Length.ShouldBe(connectionCount);
+            heartbeatLatency.Length.ShouldBe(connectionCount);
+        }
+        finally
+        {
+            await Task.WhenAll(clients.Select(client => client.DisposeAsync().AsTask()));
+        }
+    }
+
+    private static async Task<double[]> MeasureAllAsync(IEnumerable<Func<Task>> operations) =>
+        await Task.WhenAll(operations.Select(async operation =>
+        {
+            long started = System.Diagnostics.Stopwatch.GetTimestamp();
+            await operation();
+            return System.Diagnostics.Stopwatch.GetElapsedTime(started).TotalMilliseconds;
+        }));
+
+    private static string Summary(double[] values)
+    {
+        Array.Sort(values);
+        double At(double percentile) =>
+            values[Math.Min(values.Length - 1, (int)Math.Ceiling(values.Length * percentile) - 1)];
+        return $"p50={At(0.50):F1}ms,p95={At(0.95):F1}ms,p99={At(0.99):F1}ms,max={values[^1]:F1}ms";
+    }
+
+    [Fact]
+    public async Task UnauthenticatedHubConnection_IsRejected()
+    {
+        await using HubConnection client = new HubConnectionBuilder()
+            .WithUrl(
+                new Uri(fixture.Instance1.BaseAddress, "/api/hubs/connect"),
+                options =>
+                {
+                    options.Transports =
+                        Microsoft.AspNetCore.Http.Connections.HttpTransportType.WebSockets;
+                    options.SkipNegotiation = true;
+                })
+            .Build();
+
+        await Should.ThrowAsync<Exception>(() => client.StartAsync());
+    }
+
+    [Fact]
+    public async Task UserIdentityForSnapshot_ComesOnlyFromAuthenticatedClaims()
+    {
+        var userId = Guid.NewGuid();
+        fixture.Instance1.Facade.Result = new ConnectApplicationResult(
+            ConnectCommandStatus.Applied,
+            Snapshot: new ConnectSnapshot(
+                userId,
+                Player(1),
+                Queue(1),
+                Presence(1),
+                Now));
+        await using HubConnection client = CreateClient(fixture.Instance1, userId);
+        await client.StartAsync();
+
+        await client.InvokeAsync<ConnectSnapshotResponse>("GetSnapshot");
+
+        var capturedUserId = (Guid)fixture.Instance1.Facade.LastArguments![0]!;
+        capturedUserId.ShouldBe(userId);
+    }
 
     [Fact]
     public async Task BroadcastsFlowInBothDirectionsAcrossInstances()

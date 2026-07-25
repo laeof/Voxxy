@@ -21,6 +21,7 @@ public sealed class ConnectLeaseCleanupWorker(
     : BackgroundService
 {
     private readonly string _instanceId = Guid.NewGuid().ToString("N");
+    private int _cycleRunning;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -33,6 +34,12 @@ public sealed class ConnectLeaseCleanupWorker(
 
     public async Task RunCycleAsync(CancellationToken cancellationToken = default)
     {
+        if (Interlocked.CompareExchange(ref _cycleRunning, 1, 0) != 0)
+        {
+            metrics.CyclesSkipped.Add(1);
+            return;
+        }
+
         long started = Stopwatch.GetTimestamp();
         metrics.Cycles.Add(1);
         if (logger.IsEnabled(LogLevel.Debug))
@@ -89,6 +96,7 @@ public sealed class ConnectLeaseCleanupWorker(
                     _instanceId,
                     durationMs);
             }
+            Volatile.Write(ref _cycleRunning, 0);
         }
     }
 

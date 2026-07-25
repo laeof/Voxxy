@@ -4,6 +4,8 @@ namespace Connect.Application.Common;
 
 internal static class CommandValidation
 {
+    public const int MaximumDeviceNameLength = 100;
+
     public static string? Validate(RegisterConnectionCommand command)
     {
         if (command.UserId == Guid.Empty)
@@ -24,6 +26,14 @@ internal static class CommandValidation
         if (string.IsNullOrWhiteSpace(command.DeviceName))
         {
             return "Device name is required.";
+        }
+        if (command.DeviceName.Length > MaximumDeviceNameLength)
+        {
+            return $"Device name cannot exceed {MaximumDeviceNameLength} characters.";
+        }
+        if (command.DeviceName.Any(char.IsControl))
+        {
+            return "Device name cannot contain control characters.";
         }
 
         return string.IsNullOrWhiteSpace(command.ConnectionId)
@@ -113,7 +123,6 @@ internal static class CommandValidation
         {
             return common;
         }
-
         if (command.QueueItemId == Guid.Empty)
         {
             return "Queue item ID is required.";

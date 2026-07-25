@@ -124,6 +124,25 @@ public sealed class RegisterConnectionHandlerTests
         store.ReadPresenceCalls.ShouldBe(0);
     }
 
+    [Theory]
+    [InlineData(101, false)]
+    [InlineData(10, true)]
+    public async Task OversizedOrControlCharacterDeviceName_IsRejected(
+        int length,
+        bool controlCharacter)
+    {
+        var store = new FakeConnectStateStore();
+        string name = controlCharacter
+            ? "Browser\u0000"
+            : new string('a', length);
+
+        ConnectApplicationResult result = await Handler(store).HandleAsync(
+            Command() with { DeviceName = name });
+
+        result.Status.ShouldBe(ConnectCommandStatus.ValidationFailed);
+        store.ReadPresenceCalls.ShouldBe(0);
+    }
+
     private static RegisterConnectionHandler Handler(FakeConnectStateStore store) => new(store);
 
     private static RegisterConnectionCommand Command() =>

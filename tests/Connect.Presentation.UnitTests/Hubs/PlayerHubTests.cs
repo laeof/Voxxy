@@ -11,6 +11,7 @@ namespace Connect.Presentation.UnitTests.Hubs;
 
 public sealed class PlayerHubTests
 {
+    private static readonly ConnectTransportMetrics Metrics = new();
     private static readonly Guid UserId = Guid.NewGuid();
     private static readonly DateTimeOffset Now =
         new(2026, 2, 3, 4, 5, 6, TimeSpan.Zero);
@@ -47,6 +48,31 @@ public sealed class PlayerHubTests
     }
 
     [Fact]
+    public async Task RateLimitedCommand_DoesNotReachApplicationHandler()
+    {
+        (PlayerHub hub, TestConnectCommandFacade facade, _, _) = CreateHub();
+        await hub.RefreshConnectionLease();
+
+        HubException exception = await Should.ThrowAsync<HubException>(
+            hub.RefreshConnectionLease);
+
+        exception.Message.ShouldBe("connect_rate_limited");
+        facade.Calls.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task SignalROriginOutsideAllowList_IsRejected()
+    {
+        (PlayerHub hub, _, _, _) = CreateHub(
+            origin: "https://evil.example",
+            allowedOrigins: new HashSet<string> { "https://voxxy.example" });
+
+        HubException exception = await Should.ThrowAsync<HubException>(hub.OnConnectedAsync);
+
+        exception.Message.ShouldBe("connect_origin_not_allowed");
+    }
+
+    [Fact]
     public async Task OnConnected_AddsSocketToUserGroupWithoutRegistration()
     {
         (PlayerHub hub, TestConnectCommandFacade facade, _, _) = CreateHub();
@@ -61,7 +87,7 @@ public sealed class PlayerHubTests
     }
 
     [Fact]
-    public async Task Command_UsesInjectedTimeProviderOncePerInvocation()
+    public async Task Command_UsesInjectedTimeProviderForServerTimeAndRateLimit()
     {
         (PlayerHub hub, TestConnectCommandFacade facade, _, TestTimeProvider clock) =
             CreateHub();
@@ -70,7 +96,7 @@ public sealed class PlayerHubTests
 
         PauseCommand command = facade.LastCommand.ShouldBeOfType<PauseCommand>();
         command.ServerTime.ShouldBe(Now);
-        clock.GetUtcNowCalls.ShouldBe(1);
+        clock.GetUtcNowCalls.ShouldBe(3);
     }
 
     [Fact]
@@ -376,7 +402,10 @@ public sealed class PlayerHubTests
         PlayerHub Hub,
         TestConnectCommandFacade Facade,
         TestBroadcaster Broadcaster,
-        TestTimeProvider TimeProvider) CreateHub(bool missingUser = false)
+        TestTimeProvider TimeProvider) CreateHub(
+            bool missingUser = false,
+            string? origin = null,
+            IReadOnlySet<string>? allowedOrigins = null)
     {
         var facade = new TestConnectCommandFacade();
         var broadcaster = new TestBroadcaster();
@@ -385,10 +414,18 @@ public sealed class PlayerHubTests
             facade,
             broadcaster,
             timeProvider,
+            new ConnectTransportOptions
+            {
+                AllowedOrigins = allowedOrigins ?? new HashSet<string>()
+            },
+            new ConnectInvocationRateLimiter(timeProvider),
+            Metrics,
             NullLogger<PlayerHub>.Instance)
         {
             Context = new TestHubCallerContext(
-                missingUser ? null : UserId.ToString("D"))
+                missingUser ? null : UserId.ToString("D"),
+                origin: origin),
+            Groups = new TestGroupManager()
         };
         return (hub, facade, broadcaster, timeProvider);
     }

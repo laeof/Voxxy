@@ -162,6 +162,24 @@ public sealed class SignalRBackplaneOptionsTests
         registration.Tags.ShouldNotContain("live");
     }
 
+    [Fact]
+    public void OversizedHubPayload_IsRejectedByConfiguredReceiveLimit()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddConnectModulePresentation(
+            Configuration(
+                ("SignalR:Backplane:Enabled", "false"),
+                ("Connect:Transport:MaximumReceiveMessageSize", "32768")));
+        using ServiceProvider provider = services.BuildServiceProvider();
+
+        long? limit = provider
+            .GetRequiredService<IOptions<HubOptions<PlayerHub>>>()
+            .Value.MaximumReceiveMessageSize;
+
+        limit.ShouldBe(32768);
+    }
+
     private static IConfiguration Configuration(
         params (string Key, string Value)[] values) =>
         new ConfigurationBuilder()

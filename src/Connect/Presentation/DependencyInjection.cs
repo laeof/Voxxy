@@ -2,6 +2,7 @@ using Connect.Presentation.Application;
 using Connect.Presentation.Backplane;
 using Connect.Presentation.Broadcasting;
 using Connect.Presentation.Cleanup;
+using Connect.Presentation.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,8 +24,22 @@ public static class DependencyInjection
         cleanupOptions.Validate();
         var backplaneOptions =
             SignalRBackplaneOptions.FromConfiguration(configuration);
+        var transportOptions = new ConnectTransportOptions
+        {
+            MaximumReceiveMessageSize =
+                configuration.GetValue<long?>(
+                    $"{ConnectTransportOptions.SectionName}:MaximumReceiveMessageSize")
+                ?? ConnectTransportOptions.DefaultMaximumReceiveMessageSize,
+            AllowedOrigins = new HashSet<string>(
+                configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [],
+                StringComparer.OrdinalIgnoreCase)
+        };
+        transportOptions.Validate();
 
         ISignalRServerBuilder signalR = services.AddSignalR();
+        services.Configure<HubOptions<PlayerHub>>(
+            options =>
+                options.MaximumReceiveMessageSize = transportOptions.MaximumReceiveMessageSize);
         if (backplaneOptions.Enabled)
         {
             signalR.AddStackExchangeRedis(
@@ -39,6 +54,9 @@ public static class DependencyInjection
                 });
         }
         services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton(transportOptions);
+        services.AddSingleton<ConnectInvocationRateLimiter>();
+        services.AddSingleton<ConnectTransportMetrics>();
         services.AddSingleton(backplaneOptions);
         services.AddHostedService<SignalRBackplaneStartupLogger>();
         services.AddHealthChecks()

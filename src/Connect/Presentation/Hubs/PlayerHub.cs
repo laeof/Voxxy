@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics;
 using Connect.Application.Commands;
 using Connect.Application.Results;
 using Connect.Domain.Queue;
@@ -16,17 +17,37 @@ public sealed class PlayerHub(
     IConnectCommandFacade facade,
     IConnectBroadcaster broadcaster,
     TimeProvider timeProvider,
+    ConnectTransportOptions transportOptions,
+    ConnectInvocationRateLimiter rateLimiter,
+    ConnectTransportMetrics metrics,
     ILogger<PlayerHub> logger)
     : Hub<IConnectHubClient>
 {
+    private static readonly object ConnectionMetricsRecordedKey = new();
+
     public override async Task OnConnectedAsync()
     {
+        ValidateOrigin();
         Guid userId = GetUserId();
         await Groups.AddToGroupAsync(
             Context.ConnectionId,
             ConnectGroupNames.User(userId),
             Context.ConnectionAborted);
         await base.OnConnectedAsync();
+        metrics.CurrentConnections.Add(1);
+        metrics.ConnectionsStarted.Add(1);
+        Context.Items[ConnectionMetricsRecordedKey] = true;
+    }
+
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        rateLimiter.RemoveConnection(Context.ConnectionId);
+        if (Context.Items.Remove(ConnectionMetricsRecordedKey))
+        {
+            metrics.CurrentConnections.Add(-1);
+            metrics.ConnectionsClosed.Add(1);
+        }
+        await base.OnDisconnectedAsync(exception);
     }
 
     public Task<ConnectCommandAck> RegisterConnection(
@@ -40,7 +61,7 @@ public sealed class PlayerHub(
                     userId,
                     request!.CommandId,
                     request.DeviceId,
-                    request.DeviceName,
+                    request.DeviceName.Trim(),
                     Context.ConnectionId,
                     serverTime),
                 cancellationToken));
@@ -48,6 +69,8 @@ public sealed class PlayerHub(
     public async Task<ConnectCommandAck> RefreshConnectionLease()
     {
         Guid userId = GetUserId();
+        EnsureRateLimit(ConnectRateLimitBucket.Heartbeat, nameof(RefreshConnectionLease));
+        long started = Stopwatch.GetTimestamp();
         try
         {
             ConnectApplicationResult result = await facade.HeartbeatAsync(
@@ -67,6 +90,7 @@ public sealed class PlayerHub(
                     result.Outcome?.PresenceVersion);
             }
 
+            RecordCommandMetrics(nameof(RefreshConnectionLease), result.Status, started);
             return ConnectTransportMapper.ToAck(null, result);
         }
         catch (OperationCanceledException)
@@ -75,6 +99,9 @@ public sealed class PlayerHub(
         }
         catch (Exception exception)
         {
+            metrics.Failures.Add(1, new KeyValuePair<string, object?>(
+                "command.type",
+                nameof(RefreshConnectionLease)));
             throw HandleUnexpected(exception, userId, null, nameof(RefreshConnectionLease));
         }
     }
@@ -263,6 +290,7 @@ public sealed class PlayerHub(
     {
         Guid userId = GetUserId();
         DateTimeOffset serverTime = timeProvider.GetUtcNow();
+        long started = Stopwatch.GetTimestamp();
         try
         {
             ConnectApplicationResult result = await facade.GetSnapshotAsync(
@@ -279,6 +307,11 @@ public sealed class PlayerHub(
         {
             throw HandleUnexpected(exception, userId, null, nameof(GetSnapshot));
         }
+        finally
+        {
+            metrics.SnapshotDuration.Record(
+                Stopwatch.GetElapsedTime(started).TotalMilliseconds);
+        }
     }
 
     private async Task<ConnectCommandAck> ExecuteMutationAsync<TRequest>(
@@ -294,7 +327,9 @@ public sealed class PlayerHub(
             return ConnectTransportMapper.ValidationFailed(commandId);
         }
 
+        EnsureRateLimit(BucketFor(commandType), commandType);
         DateTimeOffset serverTime = timeProvider.GetUtcNow();
+        long started = Stopwatch.GetTimestamp();
         try
         {
             ConnectApplicationResult result = await execute(
@@ -314,6 +349,7 @@ public sealed class PlayerHub(
 
             if (result.Status == ConnectCommandStatus.Applied)
             {
+                long broadcastStarted = Stopwatch.GetTimestamp();
                 try
                 {
                     await broadcaster.BroadcastAsync(
@@ -321,6 +357,11 @@ public sealed class PlayerHub(
                         commandId.Value,
                         result,
                         Context.ConnectionAborted);
+                    metrics.BroadcastDuration.Record(
+                        Stopwatch.GetElapsedTime(broadcastStarted).TotalMilliseconds,
+                        new KeyValuePair<string, object?>(
+                            "event.type",
+                            GetEventType(result)));
                 }
                 catch (OperationCanceledException)
                 {
@@ -328,6 +369,11 @@ public sealed class PlayerHub(
                 }
                 catch (Exception exception)
                 {
+                    metrics.BroadcastFailures.Add(
+                        1,
+                        new KeyValuePair<string, object?>(
+                            "event.type",
+                            GetEventType(result)));
                     ConnectHubLog.DeliveryUnconfirmed(
                         logger,
                         exception,
@@ -341,6 +387,7 @@ public sealed class PlayerHub(
                 }
             }
 
+            RecordCommandMetrics(commandType, result.Status, started);
             return ConnectTransportMapper.ToAck(commandId, result);
         }
         catch (OperationCanceledException)
@@ -348,12 +395,17 @@ public sealed class PlayerHub(
             throw;
         }
         catch (HubException exception)
-            when (exception.Message == "connect_delivery_unconfirmed")
+            when (exception.Message is
+                "connect_delivery_unconfirmed" or
+                "connect_rate_limited")
         {
             throw;
         }
         catch (Exception exception)
         {
+            metrics.Failures.Add(
+                1,
+                new KeyValuePair<string, object?>("command.type", commandType));
             throw HandleUnexpected(exception, userId, commandId, commandType);
         }
     }
@@ -368,6 +420,68 @@ public sealed class PlayerHub(
 
         throw new HubException("connect_identity_invalid");
     }
+
+    private void ValidateOrigin()
+    {
+        string origin = Context.GetHttpContext()?.Request.Headers.Origin.ToString() ?? string.Empty;
+        if (origin.Length > 0 && !transportOptions.AllowedOrigins.Contains(origin))
+        {
+            throw new HubException("connect_origin_not_allowed");
+        }
+    }
+
+    private void EnsureRateLimit(ConnectRateLimitBucket bucket, string commandType)
+    {
+        if (commandType is nameof(RegisterConnection) or nameof(DisconnectConnection))
+        {
+            return;
+        }
+
+        if (rateLimiter.TryAcquire(Context.ConnectionId, bucket))
+        {
+            return;
+        }
+
+        metrics.RateLimited.Add(
+            1,
+            new KeyValuePair<string, object?>("command.type", commandType));
+        throw new HubException("connect_rate_limited");
+    }
+
+    private void RecordCommandMetrics(
+        string commandType,
+        ConnectCommandStatus status,
+        long started)
+    {
+        var commandTag = new KeyValuePair<string, object?>("command.type", commandType);
+        var statusTag = new KeyValuePair<string, object?>("status", status.ToString());
+        metrics.Commands.Add(1, commandTag, statusTag);
+        metrics.CommandDuration.Record(
+            Stopwatch.GetElapsedTime(started).TotalMilliseconds,
+            commandTag,
+            statusTag);
+        if (status == ConnectCommandStatus.Conflict)
+        {
+            metrics.Conflicts.Add(1, commandTag);
+        }
+        if (status == ConnectCommandStatus.Duplicate)
+        {
+            metrics.Duplicates.Add(1, commandTag);
+        }
+        if (commandType == nameof(RegisterConnection) &&
+            status is ConnectCommandStatus.Applied or ConnectCommandStatus.Duplicate)
+        {
+            metrics.ReconnectRegistrations.Add(1);
+        }
+    }
+
+    private static ConnectRateLimitBucket BucketFor(string commandType) =>
+        commandType switch
+        {
+            nameof(ChangePosition) => ConnectRateLimitBucket.Position,
+            nameof(ChangeVolume) => ConnectRateLimitBucket.Volume,
+            _ => ConnectRateLimitBucket.General
+        };
 
     private HubException HandleUnexpected(
         Exception exception,

@@ -117,6 +117,33 @@ public sealed class ConnectLeaseCleanupWorkerTests
         handler.MaximumConcurrency.ShouldBeLessThanOrEqualTo(2);
     }
 
+    [Fact]
+    public async Task CleanupCycle_DoesNotOverlap()
+    {
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handler = new TestCleanupHandler(async _ =>
+        {
+            entered.TrySetResult();
+            await release.Task;
+            return Applied();
+        });
+        using ConnectCleanupMetrics metrics = new();
+        using ConnectLeaseCleanupWorker worker = CreateWorker(
+            new TestDiscovery(Guid.NewGuid()),
+            handler,
+            new TestBroadcaster(),
+            metrics);
+
+        Task first = worker.RunCycleAsync();
+        await entered.Task;
+        await worker.RunCycleAsync();
+        release.SetResult();
+        await first;
+
+        handler.Users.Count.ShouldBe(1);
+    }
+
     private static ConnectLeaseCleanupWorker CreateWorker(
         TestDiscovery discovery,
         TestCleanupHandler handler,

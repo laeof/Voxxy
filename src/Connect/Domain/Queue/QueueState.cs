@@ -2,6 +2,7 @@ namespace Connect.Domain.Queue;
 
 public sealed class QueueState
 {
+    public const int MaximumItemCount = 1_000;
     private readonly List<QueueItem> _items;
 
     public IReadOnlyList<QueueItem> Items => _items;
@@ -78,6 +79,11 @@ public sealed class QueueState
         if (existing is not null)
         {
             throw new InvalidOperationException("Queue item ID must be unique.");
+        }
+        if (_items.Count >= MaximumItemCount)
+        {
+            throw new InvalidOperationException(
+                $"Queue cannot contain more than {MaximumItemCount} items.");
         }
 
         long canonicalOrder = _items.Count == 0
@@ -292,6 +298,12 @@ public sealed class QueueState
 
     private static void ValidateItems(List<QueueItem> items)
     {
+        if (items.Count > MaximumItemCount)
+        {
+            throw new ArgumentException(
+                $"Queue cannot contain more than {MaximumItemCount} items.",
+                nameof(items));
+        }
         if (items.Any(item => item.QueueItemId == Guid.Empty || item.TrackId == Guid.Empty))
         {
             throw new ArgumentException("Queue and track IDs are required.", nameof(items));

@@ -11,6 +11,7 @@ public sealed class ConnectCleanupMetrics : IDisposable
     public Counter<long> ConnectionsExpired { get; }
     public Counter<long> Conflicts { get; }
     public Counter<long> Failures { get; }
+    public Counter<long> CyclesSkipped { get; }
     public Histogram<double> Duration { get; }
 
     public ConnectCleanupMetrics()
@@ -20,6 +21,7 @@ public sealed class ConnectCleanupMetrics : IDisposable
         ConnectionsExpired = _meter.CreateCounter<long>("connect.cleanup.connections_expired");
         Conflicts = _meter.CreateCounter<long>("connect.cleanup.conflicts");
         Failures = _meter.CreateCounter<long>("connect.cleanup.failures");
+        CyclesSkipped = _meter.CreateCounter<long>("connect.cleanup.cycles_skipped");
         Duration = _meter.CreateHistogram<double>("connect.cleanup.duration", "ms");
     }
 

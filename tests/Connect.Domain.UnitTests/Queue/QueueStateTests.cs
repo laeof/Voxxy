@@ -6,6 +6,17 @@ namespace Connect.Domain.UnitTests.Queue;
 public sealed class QueueStateTests
 {
     [Fact]
+    public void QueueLimit_IsEnforcedDuringRestore()
+    {
+        QueueItem[] items = Enumerable.Range(0, QueueState.MaximumItemCount + 1)
+            .Select(index => new QueueItem(Guid.NewGuid(), Guid.NewGuid(), index))
+            .ToArray();
+
+        Should.Throw<ArgumentException>(() =>
+            QueueState.Restore(items, null, RepeatMode.None, false, 0));
+    }
+
+    [Fact]
     public void Add_CreatesStableQueueItemAndCanonicalOrder()
     {
         var queue = new QueueState();

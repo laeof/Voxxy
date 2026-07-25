@@ -93,6 +93,9 @@ public sealed class TestConnectHost : IAsyncDisposable
                     options.Configuration.AbortOnConnectFail = true;
                 });
         builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddSingleton(new ConnectTransportOptions());
+        builder.Services.AddSingleton<ConnectInvocationRateLimiter>();
+        builder.Services.AddSingleton<ConnectTransportMetrics>();
         IConnectCommandFacade facade =
             DispatchProxy.Create<IConnectCommandFacade, FacadeProxy>();
         builder.Services.AddSingleton(facade);
