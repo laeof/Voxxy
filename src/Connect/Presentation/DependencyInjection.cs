@@ -1,9 +1,12 @@
 using Connect.Presentation.Application;
+using Connect.Presentation.Backplane;
 using Connect.Presentation.Broadcasting;
 using Connect.Presentation.Cleanup;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using StackExchange.Redis;
 
 namespace Connect.Presentation;
 
@@ -18,9 +21,26 @@ public static class DependencyInjection
                 .Get<ConnectCleanupOptions>()
             ?? new ConnectCleanupOptions();
         cleanupOptions.Validate();
+        var backplaneOptions =
+            SignalRBackplaneOptions.FromConfiguration(configuration);
 
-        services.AddSignalR();
+        ISignalRServerBuilder signalR = services.AddSignalR();
+        if (backplaneOptions.Enabled)
+        {
+            signalR.AddStackExchangeRedis(
+                backplaneOptions.ConnectionString!,
+                redis =>
+                {
+                    redis.Configuration.ChannelPrefix =
+                        RedisChannel.Literal(backplaneOptions.ChannelPrefix);
+                    redis.Configuration.AbortOnConnectFail = true;
+                });
+        }
         services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton(backplaneOptions);
+        services.AddHostedService<SignalRBackplaneStartupLogger>();
+        services.AddHealthChecks()
+            .AddCheck<SignalRBackplaneHealthCheck>("signalr-redis");
         services.AddSingleton(cleanupOptions);
         services.AddSingleton<ConnectCleanupMetrics>();
         services.AddScoped<IConnectCommandFacade, ConnectCommandFacade>();

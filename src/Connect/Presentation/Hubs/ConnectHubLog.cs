@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Logging;
 using Connect.Application.Results;
+using Microsoft.Extensions.Logging;
 
 namespace Connect.Presentation.Hubs;
 
@@ -34,4 +34,20 @@ internal static partial class ConnectHubLog
         string connectionId,
         Guid? commandId,
         string commandType);
+
+    [LoggerMessage(
+        EventId = 3,
+        Level = LogLevel.Error,
+        Message = "Authoritative Connect event delivery was not confirmed for user {UserId}, " +
+            "command {CommandId}, event {EventType}, versions player={PlayerVersion}, " +
+            "queue={QueueVersion}, presence={PresenceVersion}")]
+    public static partial void DeliveryUnconfirmed(
+        ILogger logger,
+        Exception exception,
+        Guid userId,
+        Guid commandId,
+        string eventType,
+        long? playerVersion,
+        long? queueVersion,
+        long? presenceVersion);
 }

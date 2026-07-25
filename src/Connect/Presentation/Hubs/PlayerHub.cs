@@ -314,16 +314,41 @@ public sealed class PlayerHub(
 
             if (result.Status == ConnectCommandStatus.Applied)
             {
-                await broadcaster.BroadcastAsync(
-                    userId,
-                    commandId.Value,
-                    result,
-                    Context.ConnectionAborted);
+                try
+                {
+                    await broadcaster.BroadcastAsync(
+                        userId,
+                        commandId.Value,
+                        result,
+                        Context.ConnectionAborted);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception exception)
+                {
+                    ConnectHubLog.DeliveryUnconfirmed(
+                        logger,
+                        exception,
+                        userId,
+                        commandId.Value,
+                        GetEventType(result),
+                        result.Outcome?.PlayerVersion,
+                        result.Outcome?.QueueVersion,
+                        result.Outcome?.PresenceVersion);
+                    throw new HubException("connect_delivery_unconfirmed");
+                }
             }
 
             return ConnectTransportMapper.ToAck(commandId, result);
         }
         catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (HubException exception)
+            when (exception.Message == "connect_delivery_unconfirmed")
         {
             throw;
         }
@@ -366,4 +391,15 @@ public sealed class PlayerHub(
         commandId.TryWriteBytes(bytes);
         return BinaryPrimitives.ReadInt32BigEndian(bytes);
     }
+
+    private static string GetEventType(ConnectApplicationResult result) =>
+        (result.Player, result.Queue, result.Presence) switch
+        {
+            (not null, not null, _) => "PlayerQueueStateChanged",
+            (not null, _, not null) => "PlayerPresenceStateChanged",
+            (not null, _, _) => "PlayerStateChanged",
+            (_, not null, _) => "QueueStateChanged",
+            (_, _, not null) => "PresenceStateChanged",
+            _ => "None"
+        };
 }

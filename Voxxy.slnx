@@ -26,6 +26,7 @@
         <Project Path="tests/Connect.Application.UnitTests/Connect.Application.UnitTests.csproj" />
         <Project Path="tests/Connect.Domain.UnitTests/Connect.Domain.UnitTests.csproj" />
         <Project Path="tests/Connect.Infrastructure.IntegrationTests/Connect.Infrastructure.IntegrationTests.csproj" />
+        <Project Path="tests/Connect.MultiInstance.IntegrationTests/Connect.MultiInstance.IntegrationTests.csproj" />
         <Project Path="tests/Connect.Presentation.UnitTests/Connect.Presentation.UnitTests.csproj" />
     </Folder>
     <Project Path="docker-compose.dcproj">

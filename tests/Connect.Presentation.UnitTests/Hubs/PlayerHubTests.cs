@@ -319,6 +319,24 @@ public sealed class PlayerHubTests
         exception.Message.ShouldBe("connect_internal_error");
     }
 
+    [Fact]
+    public async Task AppliedCommand_WhenBroadcastFails_ReturnsDeliveryUnconfirmed()
+    {
+        (PlayerHub hub, TestConnectCommandFacade facade, TestBroadcaster broadcaster, _) =
+            CreateHub();
+        facade.Result = new ConnectApplicationResult(
+            ConnectCommandStatus.Applied,
+            Player: Player(3),
+            Outcome: new ConnectCommandOutcome(PlayerVersion: 3));
+        broadcaster.Exception = new InvalidOperationException("redis backplane unavailable");
+
+        HubException exception = await Should.ThrowAsync<HubException>(() =>
+            hub.Play(new CommandRequest(Guid.NewGuid())));
+
+        exception.Message.ShouldBe("connect_delivery_unconfirmed");
+        facade.Calls.ShouldBe(1);
+    }
+
     private static (
         PlayerHub Hub,
         TestConnectCommandFacade Facade,

@@ -9,6 +9,7 @@ internal sealed class TestBroadcaster : IConnectBroadcaster
     public Guid? UserId { get; private set; }
     public Guid? CommandId { get; private set; }
     public ConnectApplicationResult? Result { get; private set; }
+    public Exception? Exception { get; set; }
 
     public Task BroadcastAsync(
         Guid userId,
@@ -17,6 +18,10 @@ internal sealed class TestBroadcaster : IConnectBroadcaster
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (Exception is not null)
+        {
+            throw Exception;
+        }
         Calls++;
         UserId = userId;
         CommandId = commandId;
