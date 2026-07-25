@@ -55,7 +55,8 @@ public sealed class DisconnectConnectionHandler(
             var outcome = new ConnectCommandOutcome(
                 ConnectionId: command.ConnectionId,
                 PresenceVersion: presence.Version,
-                RemovedConnectionCount: domainResult.Removed ? 1 : 0);
+                RemovedConnectionCount: domainResult.Removed ? 1 : 0,
+                PlayerVersion: playerChanged ? player.Version : null);
             var persistenceCommand = new PersistenceCommand(
                 command.CommandId,
                 CommandType,
@@ -98,7 +99,7 @@ public sealed class DisconnectConnectionHandler(
                 domainResult.Removed
                     ? ConnectCommandStatus.Applied
                     : ConnectCommandStatus.NoChanges,
-                player: playerDto,
+                player: playerChanged ? playerDto : null,
                 presence: presenceDto,
                 outcome: outcome);
         }

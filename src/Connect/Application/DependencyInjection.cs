@@ -1,6 +1,7 @@
 using Connect.Application.Abstractions.Handlers;
 using Connect.Application.DeviceLifecycle;
 using Connect.Application.PlayerQueue;
+using Connect.Application.Snapshots;
 using Connect.Domain.Synchronization;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -30,6 +31,7 @@ public static class DependencyInjection
         services.AddScoped<IChangeRepeatModeHandler, ChangeRepeatModeHandler>();
         services.AddScoped<INextQueueItemHandler, NextQueueItemHandler>();
         services.AddScoped<IPreviousQueueItemHandler, PreviousQueueItemHandler>();
+        services.AddScoped<IConnectSnapshotReader, ConnectSnapshotReader>();
 
         return services;
     }

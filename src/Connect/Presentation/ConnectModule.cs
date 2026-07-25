@@ -23,7 +23,7 @@ public static class ConnectModule
     public static IEndpointRouteBuilder MapConnectModule(this IEndpointRouteBuilder app)
     {
         app.MapConnectEndpoints();
-        app.MapHub<PlayerHub>("/hubs/player");
+        app.MapHub<PlayerHub>("/api/hubs/connect");
 
         return app;
     }

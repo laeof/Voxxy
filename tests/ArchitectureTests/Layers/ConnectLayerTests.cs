@@ -1,5 +1,6 @@
 using NetArchTest.Rules;
 using Shouldly;
+using Connect.Presentation.Hubs;
 
 namespace ArchitectureTests.Layers;
 
@@ -47,5 +48,38 @@ public sealed class ConnectLayerTests
             .GetResult();
 
         result.IsSuccessful.ShouldBeTrue();
+    }
+
+    [Theory]
+    [InlineData("Connect.Infrastructure.Redis")]
+    [InlineData("StackExchange.Redis")]
+    public void ConnectHub_MustNotReferenceRedis(string dependency)
+    {
+        TestResult result = Types.InAssembly(typeof(PlayerHub).Assembly)
+            .That()
+            .HaveName(nameof(PlayerHub))
+            .Should()
+            .NotHaveDependencyOn(dependency)
+            .GetResult();
+
+        result.IsSuccessful.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void ConnectHub_PublicMethodsMustNotExposeDomainStateTypes()
+    {
+        Type[] parameterTypes = typeof(PlayerHub)
+            .GetMethods(System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.DeclaredOnly)
+            .SelectMany(method => method.GetParameters())
+            .Select(parameter => parameter.ParameterType)
+            .ToArray();
+
+        parameterTypes.All(type =>
+                !(type.Namespace ?? string.Empty).StartsWith(
+                    "Connect.Domain",
+                    StringComparison.Ordinal))
+            .ShouldBeTrue();
     }
 }

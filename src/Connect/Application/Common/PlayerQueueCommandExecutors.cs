@@ -275,13 +275,25 @@ internal static class PlayerQueueCommandExecutors
             }
 
             bool exposeMutation = commit.Status == PersistenceStatus.Applied;
+            PlayerStateDto? playerDto = (exposeMutation, playerChanged, commit.Status) switch
+            {
+                (true, true, _) => ConnectDtoMapper.ToDto(player),
+                (_, _, PersistenceStatus.Duplicate) => playerBefore,
+                _ => null
+            };
+            QueueStateDto? queueDto = (exposeMutation, queueChanged, commit.Status) switch
+            {
+                (true, true, _) => ConnectDtoMapper.ToDto(queue),
+                (_, _, PersistenceStatus.Duplicate) => queueBefore,
+                _ => null
+            };
             return HandlerResultFactory.FromCommit(
                 commit,
                 playerChanged || queueChanged
                     ? ConnectCommandStatus.Applied
                     : ConnectCommandStatus.NoChanges,
-                player: exposeMutation ? ConnectDtoMapper.ToDto(player) : playerBefore,
-                queue: exposeMutation ? ConnectDtoMapper.ToDto(queue) : queueBefore,
+                player: playerDto,
+                queue: queueDto,
                 outcome: outcome);
         }
 

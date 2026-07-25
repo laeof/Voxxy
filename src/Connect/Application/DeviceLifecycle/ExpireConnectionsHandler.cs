@@ -61,7 +61,8 @@ public sealed class ExpireConnectionsHandler(
             bool playerChanged = player.Version != expectedPlayerVersion;
             var outcome = new ConnectCommandOutcome(
                 PresenceVersion: presence.Version,
-                RemovedConnectionCount: domainResult.RemovedCount);
+                RemovedConnectionCount: domainResult.RemovedCount,
+                PlayerVersion: playerChanged ? player.Version : null);
             var persistenceCommand = new PersistenceCommand(
                 command.CommandId,
                 CommandType,
@@ -104,7 +105,7 @@ public sealed class ExpireConnectionsHandler(
                 domainResult.RemovedCount > 0
                     ? ConnectCommandStatus.Applied
                     : ConnectCommandStatus.NoChanges,
-                player: playerDto,
+                player: playerChanged ? playerDto : null,
                 presence: presenceDto,
                 outcome: outcome);
         }
