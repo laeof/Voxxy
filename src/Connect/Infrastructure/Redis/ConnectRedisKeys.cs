@@ -12,6 +12,10 @@ public static class ConnectRedisKeys
 
     public static string Presence(Guid userId) => $"{Prefix}:presence:{{{userId:D}}}";
 
+    public static string Sessions => $"{Prefix}:sessions";
+
+    public static string CleanupLease(Guid userId) => $"{Prefix}:cleanup:{{{userId:D}}}";
+
     public static string Command(Guid userId, Guid commandId) =>
         $"{Prefix}:command:{{{userId:D}}}:{commandId:D}";
 

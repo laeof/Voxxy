@@ -13,7 +13,7 @@ public static class ConnectModule
 {
     public static IServiceCollection AddConnectModule(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddConnectModulePresentation();
+        services.AddConnectModulePresentation(configuration);
         services.AddConnectModuleApplication();
         services.AddConnectModuleInfrastructure(configuration);
 

@@ -87,7 +87,7 @@ public sealed class ExpireConnectionsHandlerTests
 
         result.Status.ShouldBe(ConnectCommandStatus.Applied);
         committedIds.ShouldBeEmpty();
-        store.ReadExpiredConnectionsCalls.ShouldBe(1);
+        store.ReadExpiredConnectionsCalls.ShouldBe(2);
     }
 
     [Fact]
@@ -118,7 +118,14 @@ public sealed class ExpireConnectionsHandlerTests
         PresenceState presence) =>
         new()
         {
-            ReadSnapshot = (_, _) => TestResults.Snapshot(player, presence)
+            ReadSnapshot = (_, _) => TestResults.Snapshot(player, presence),
+            ReadExpiredConnections = (_, state) => new(
+                PersistenceStatus.Success,
+                state.Devices
+                    .SelectMany(device => device.Connections)
+                    .Select(connection => connection.ConnectionId)
+                    .ToArray(),
+                null)
         };
 
     private static ExpireConnectionsHandler Handler(FakeConnectStateStore store) =>

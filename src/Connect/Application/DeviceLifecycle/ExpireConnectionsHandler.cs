@@ -53,10 +53,27 @@ public sealed class ExpireConnectionsHandler(
             long expectedPresenceVersion = presence.Version;
 
             cancellationToken.ThrowIfCancellationRequested();
+            ExpiredConnectionsReadResult verifiedExpired =
+                await store.ReadExpiredConnectionsAsync(
+                    command.UserId,
+                    presence,
+                    cancellationToken);
+            if (verifiedExpired.Status != PersistenceStatus.Success)
+            {
+                return PersistenceStatusMapper.FromReadFailure(
+                    verifiedExpired.Status,
+                    verifiedExpired.Error);
+            }
+
+            HashSet<string> requested = connectionIds.ToHashSet(StringComparer.Ordinal);
+            string[] currentlyExpired =
+            [
+                .. verifiedExpired.ConnectionIds.Where(requested.Contains)
+            ];
             ExpireConnectionsResult domainResult = coordinator.ExpireConnections(
                 presence,
                 player,
-                connectionIds,
+                currentlyExpired,
                 command.ServerTime);
             bool playerChanged = player.Version != expectedPlayerVersion;
             var outcome = new ConnectCommandOutcome(

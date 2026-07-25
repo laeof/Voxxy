@@ -1,3 +1,4 @@
+using System.Globalization;
 using Connect.Application.Abstractions.Persistence;
 using Connect.Infrastructure.Redis;
 using Microsoft.Extensions.Configuration;
@@ -12,7 +13,17 @@ public static class DependencyInjection
     {
         services.AddRedis(configuration);
         services.AddSingleton(ConnectRedisOptions.FromConfiguration(configuration));
+        TimeSpan cleanupLeaseTtl =
+            TimeSpan.TryParse(
+                configuration["Connect:Cleanup:UserLeaseTtl"],
+                CultureInfo.InvariantCulture,
+                out TimeSpan configuredCleanupLeaseTtl)
+                ? configuredCleanupLeaseTtl
+                : TimeSpan.FromSeconds(30);
+        services.AddSingleton(new ConnectCleanupLeaseOptions(cleanupLeaseTtl));
         services.AddScoped<IConnectStateStore, RedisConnectStateStore>();
+        services.AddSingleton<IConnectSessionDiscovery, RedisConnectSessionDiscovery>();
+        services.AddSingleton<IConnectCleanupLease, RedisConnectCleanupLease>();
 
         return services;
     }

@@ -43,7 +43,12 @@ public sealed class DetectMissingLeasesService(
 
         if (expired.ConnectionIds.Count == 0)
         {
-            return new ConnectApplicationResult(ConnectCommandStatus.NoChanges);
+            return new ConnectApplicationResult(
+                ConnectCommandStatus.NoChanges,
+                Presence: ConnectDtoMapper.ToDto(read.State),
+                Outcome: new ConnectCommandOutcome(
+                    PresenceVersion: read.State.Version,
+                    RemovedConnectionCount: 0));
         }
 
         return await expireConnectionsHandler.HandleAsync(

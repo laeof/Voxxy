@@ -410,7 +410,27 @@ public sealed class RedisConnectStateStore : IConnectStateStore
                 [.. arguments]);
             RedisResult[] values = (RedisResult[]?)result
                 ?? throw new InvalidOperationException("Redis commit result is missing.");
-            return MapCommitResult(values);
+            PersistenceCommitResult commitResult = MapCommitResult(values);
+            if (commitResult.Status is PersistenceStatus.Applied or PersistenceStatus.Duplicate &&
+                writes.Any(write =>
+                    string.Equals(
+                        write.Key,
+                        ConnectRedisKeys.Presence(userId),
+                        StringComparison.Ordinal)))
+            {
+                try
+                {
+                    await _database.SetAddAsync(
+                        ConnectRedisKeys.Sessions,
+                        userId.ToString("D"));
+                }
+                catch (RedisException)
+                {
+                    // The global discovery index is eventual. A later Presence mutation repairs it.
+                }
+            }
+
+            return commitResult;
         }
         catch (RedisException)
         {

@@ -1,6 +1,7 @@
 using NetArchTest.Rules;
 using Shouldly;
 using Connect.Presentation.Hubs;
+using Connect.Presentation.Cleanup;
 
 namespace ArchitectureTests.Layers;
 
@@ -81,5 +82,22 @@ public sealed class ConnectLayerTests
                     "Connect.Domain",
                     StringComparison.Ordinal))
             .ShouldBeTrue();
+    }
+
+    [Theory]
+    [InlineData("Connect.Infrastructure.Redis")]
+    [InlineData("StackExchange.Redis")]
+    [InlineData("Connect.Domain")]
+    public void ConnectCleanupWorker_MustNotReferencePersistenceImplementationOrDomain(
+        string dependency)
+    {
+        TestResult result = Types.InAssembly(typeof(ConnectLeaseCleanupWorker).Assembly)
+            .That()
+            .HaveName(nameof(ConnectLeaseCleanupWorker))
+            .Should()
+            .NotHaveDependencyOn(dependency)
+            .GetResult();
+
+        result.IsSuccessful.ShouldBeTrue();
     }
 }
