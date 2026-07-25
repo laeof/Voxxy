@@ -131,12 +131,12 @@ integration waits for `T001-07`.
   - Active device is identified by persistent `deviceId`; connection IDs represent
     presence only.
   - Multiple connections per device are defined explicitly.
-  - One authoritative snapshot includes or references player, queue, active device,
-    state version, and server update time.
+  - One authoritative snapshot includes Player, Queue, and Presence, each carrying
+    only its own state version, plus server update time.
   - Command identity/version rules define duplicate and stale-command handling.
   - Rules for play, pause, seek, volume, select track/device, add/remove queue item,
     disconnect, reconnect, and backend restart are documented.
-  - Event names and payload compatibility/migration strategy are agreed.
+  - Event names and the coordinated breaking migration boundary are agreed.
 - **Required verification:** contract review using scenarios for two users, two
   devices, two tabs, reconnect, duplicate command, and stale command.
 - **Main risks:** choosing connection ID as identity again; breaking the frontend
@@ -163,8 +163,8 @@ integration waits for `T001-07`.
   - Domain/Application contracts contain no Redis or SignalR types.
 - **Required verification:** focused unit tests for state transitions, invalid
   operations, duplicate commands, and multiple connections.
-- **Main risks:** incompatible serialized Redis data; ambiguous migration of old
-  keys; placing transport concerns in Domain.
+- **Main risks:** accidental reads of incompatible legacy Redis data; mixed
+  backend/frontend deployment; placing transport concerns in Domain.
 
 ### T001-03 — Make Redis state updates concurrency-safe
 
@@ -180,19 +180,19 @@ integration waits for `T001-07`.
   - Writes use an explicit optimistic version check, transaction, Lua script, or
     another atomic Redis mechanism.
   - Duplicate command handling is atomic with state mutation.
-  - Missing, expired, malformed, and legacy state have defined outcomes.
+  - Missing, expired, and malformed v2 state have defined outcomes.
   - TTL refresh and cleanup rules are consistent across related keys.
   - Repository abstractions express atomic operations without leaking
     `StackExchange.Redis`.
 - **Required verification:** repository integration tests against Redis covering
   competing updates, duplicates, expiry, and backend restart.
-- **Main risks:** partial consistency across three keys; retry storms; losing
-  existing Redis state during schema migration.
+- **Main risks:** partial consistency across three keys; retry storms; accidental
+  collision with or reads from legacy keys.
 
 ### T001-04 — Rework device registration, presence, reconnect, and failover
 
 - **Goal:** track stable devices and transient connections correctly and safely
-  choose a new active device after disconnect.
+  clear/pause the active device after its final connection disconnects.
 - **Affected repository:** `Voxxy`.
 - **Affected projects:** `Connect.Domain`, `Connect.Application`,
   `Connect.Presentation`.
@@ -228,7 +228,8 @@ integration waits for `T001-07`.
 - **Parallel:** yes, with T001-04 and T001-06.
 - **Acceptance criteria:**
   - Any authorized device may issue player commands.
-  - Commands update the shared snapshot and increment its version atomically.
+  - Commands atomically update only their owning authoritative state(s) and
+    increment only those state versions.
   - Stale/duplicate commands are rejected or return the current state
     idempotently.
   - Volume and position are validated and normalized.
@@ -285,7 +286,8 @@ integration waits for `T001-07`.
   - Reconnect registration is idempotent.
   - Temporary hard-coded test endpoints are removed or isolated from production
     mapping.
-  - Transitional event compatibility follows T001-01.
+  - Old methods/events are replaced; no compatibility adapters or duplicate
+    events are introduced.
 - **Required verification:** in-process SignalR integration tests with multiple
   authenticated clients and an integration Redis instance.
 - **Main risks:** event reordering; partial broadcasts after persistence succeeds;
@@ -310,7 +312,8 @@ integration waits for `T001-07`.
   - Queue and full-state events are typed and no longer logged without being
     applied.
   - Connection start/stop/reconnect errors have explicit observable state.
-  - Duplicate/out-of-order snapshots can be filtered by version.
+  - Duplicate/out-of-order states can be filtered by their embedded versions;
+    complete newer state is accepted even when intermediate versions were skipped.
 - **Required verification:** unit tests with a mocked HubConnection for initial
   connection, reconnect, duplicate events, ordering, and disconnect.
 - **Main risks:** tight coupling to `HubConnection`; registering handlers twice;
@@ -445,15 +448,15 @@ Avoid parallel edits to the same hotspot files:
    JSON shapes.
 3. Complete T001-01.
 
-**Milestone:** stable reviewed contract and migration strategy; no runtime behavior
-changed.
+**Milestone:** stable reviewed v2 contract and coordinated breaking rollout
+strategy; no runtime behavior changed.
 
 ### Phase 1 — Backend foundations
 
 1. Complete T001-02.
 2. Implement T001-03 and T001-04 in parallel.
-3. Keep compatibility readers or explicitly clear development Redis data according
-   to the migration decision.
+3. Use isolated `connect:v2:*` keys and document optional legacy-key cleanup; never
+   read or convert legacy state.
 
 **Milestone:** stable device identity, connection presence, versioned state, and
 atomic persistence with the project buildable.
@@ -464,28 +467,33 @@ atomic persistence with the project buildable.
 2. Complete T001-07 after both command families and device lifecycle are ready.
 3. Run backend unit, Redis integration, architecture, and SignalR integration tests.
 
-**Milestone:** backend is the authoritative source of truth and supports old or
-new frontend compatibility as decided in T001-01.
+**Milestone:** backend implements only the authoritative v2 protocol and is
+verified against frozen v2 frontend fixtures.
 
 ### Phase 3 — Frontend convergence
 
-1. T001-08 may be prepared earlier against contract fixtures, then integrated with
-   T001-07.
+1. T001-08 may be prepared earlier against frozen v2 contract fixtures, then
+   integrated with T001-07 on matching branches/artifacts.
 2. Complete T001-09.
 3. Implement T001-10 and T001-11 in parallel where file ownership permits.
 4. Preserve a buildable frontend after each task; avoid a partial migration where
-   old setters and new intents both send commands.
+   old setters and new intents both send commands. The migrated frontend is not
+   expected to run against the old backend.
 
 **Milestone:** all clients display authoritative state, only the active persistent
 device plays audio, and queue state converges.
 
-### Phase 4 — Integration and rollout
+### Phase 4 — Breaking integration and coordinated rollout
 
 1. Complete T001-12.
 2. Run the full two-user/two-device/multi-tab matrix.
 3. Test Redis loss/expiry, backend restart, reconnect, active-device disconnect,
    duplicate commands, and rapid competing commands.
-4. Remove transitional contracts only after both repositories use the new protocol.
+4. Prepare both verified artifacts before deployment.
+5. Deploy backend and frontend in one coordinated release window; mixed old/new
+   runtime combinations are unsupported.
+6. Require old tabs to reload/reconnect.
+7. Delete isolated legacy Redis keys explicitly or leave them to expire.
 
 **Milestone:** automated and manual evidence covers convergence, single-device
 audio, idempotency, resilience, and absence of feedback loops.

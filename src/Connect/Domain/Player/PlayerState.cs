@@ -1,60 +1,167 @@
-using Connect.Domain.Player;
-
 namespace Connect.Domain.Player;
 
 public sealed class PlayerState
 {
-    public Guid UserId { get; set; }
-    public Guid? TrackId { get; set; }
-    public Guid? QueueId { get; set; }
-    public string? ActiveDeviceId { get; set; } //ConnectionId of the active device
-    public bool IsPlaying { get; set; }
-    public int PositionMs { get; set; }
-    public int VolumePercent { get; set; }
-    public DateTimeOffset UpdatedAt { get; set; }
-    public PlayerState(Guid userId)
+    public const int DefaultVolumePercent = 50;
+
+    public bool IsPlaying { get; private set; }
+    public long PositionMs { get; private set; }
+    public DateTimeOffset PositionUpdatedAt { get; private set; }
+    public int VolumePercent { get; private set; }
+    public long Version { get; private set; }
+
+    public PlayerState(DateTimeOffset serverTime)
+        : this(false, 0, serverTime, DefaultVolumePercent, 0)
     {
-        UserId = userId;
-        TrackId = null;
-        QueueId = null;
-        IsPlaying = false;
-        VolumePercent = 50;
-        ActiveDeviceId = null;
-        UpdatedAt = DateTimeOffset.UtcNow;
-        PositionMs = 0;
     }
 
-    public void Play(Guid? trackId, Guid? queueId, int positionMs, DateTimeOffset updatedAt)
+    private PlayerState(
+        bool isPlaying,
+        long positionMs,
+        DateTimeOffset positionUpdatedAt,
+        int volumePercent,
+        long version)
     {
-        TrackId = trackId;
-        QueueId = queueId;
+        ValidatePosition(positionMs);
+        ValidateVolume(volumePercent);
+        ValidateVersion(version);
+
+        IsPlaying = isPlaying;
         PositionMs = positionMs;
-        IsPlaying = true;
-        UpdatedAt = updatedAt;
-    }
-
-    public void Stop(Guid? trackId, Guid? queueId, int positionMs, DateTimeOffset updatedAt)
-    {
-        IsPlaying = false;
-        TrackId = trackId;
-        QueueId = queueId;
-        PositionMs = positionMs;
-        UpdatedAt = updatedAt;
-    }
-
-    public void ConnectToDevice(string connectionId)
-    {
-        ActiveDeviceId = connectionId;
-    }
-
-    public void ChangePosition(int positionMs, DateTimeOffset updatedAt)
-    {
-        PositionMs = positionMs;
-        UpdatedAt = updatedAt;
-    }
-
-    public void ChangeVolume(int volumePercent)
-    {
+        PositionUpdatedAt = positionUpdatedAt;
         VolumePercent = volumePercent;
+        Version = version;
     }
+
+    public static PlayerState Restore(
+        bool isPlaying,
+        long positionMs,
+        DateTimeOffset positionUpdatedAt,
+        int volumePercent,
+        long version) =>
+        new(isPlaying, positionMs, positionUpdatedAt, volumePercent, version);
+
+    public bool Play(DateTimeOffset serverTime)
+    {
+        if (IsPlaying)
+        {
+            return false;
+        }
+
+        IsPlaying = true;
+        PositionUpdatedAt = serverTime;
+        IncrementVersion();
+        return true;
+    }
+
+    public bool Pause(DateTimeOffset serverTime)
+    {
+        if (!IsPlaying)
+        {
+            return false;
+        }
+
+        PositionMs = GetPositionAt(serverTime);
+        IsPlaying = false;
+        PositionUpdatedAt = serverTime;
+        IncrementVersion();
+        return true;
+    }
+
+    public long GetPositionAt(DateTimeOffset serverTime)
+    {
+        if (!IsPlaying)
+        {
+            return PositionMs;
+        }
+
+        long elapsedTicks = serverTime.UtcTicks - PositionUpdatedAt.UtcTicks;
+        if (elapsedTicks <= 0)
+        {
+            return PositionMs;
+        }
+
+        long elapsedMs = elapsedTicks / TimeSpan.TicksPerMillisecond;
+        return checked(PositionMs + elapsedMs);
+    }
+
+    public bool Seek(long positionMs, DateTimeOffset serverTime)
+    {
+        ValidatePosition(positionMs);
+
+        if (!IsPlaying && PositionMs == positionMs)
+        {
+            return false;
+        }
+
+        PositionMs = positionMs;
+        PositionUpdatedAt = serverTime;
+        IncrementVersion();
+        return true;
+    }
+
+    public bool ResetPosition(DateTimeOffset serverTime) => Seek(0, serverTime);
+
+    public bool ChangeVolume(int volumePercent)
+    {
+        ValidateVolume(volumePercent);
+
+        if (VolumePercent == volumePercent)
+        {
+            return false;
+        }
+
+        VolumePercent = volumePercent;
+        IncrementVersion();
+        return true;
+    }
+
+    public bool ClearAndPause(DateTimeOffset serverTime)
+    {
+        if (!IsPlaying && PositionMs == 0)
+        {
+            return false;
+        }
+
+        IsPlaying = false;
+        PositionMs = 0;
+        PositionUpdatedAt = serverTime;
+        IncrementVersion();
+        return true;
+    }
+
+    private static void ValidatePosition(long positionMs)
+    {
+        if (positionMs < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(positionMs),
+                positionMs,
+                "Position cannot be negative.");
+        }
+    }
+
+    private static void ValidateVolume(int volumePercent)
+    {
+        if (volumePercent is < 0 or > 100)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(volumePercent),
+                volumePercent,
+                "Volume must be between 0 and 100.");
+        }
+    }
+
+    private static void ValidateVersion(long version)
+    {
+        if (version < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(version),
+                version,
+                "Version cannot be negative.");
+        }
+    }
+
+    private void IncrementVersion() => Version++;
 }

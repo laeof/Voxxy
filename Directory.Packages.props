@@ -43,5 +43,6 @@
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <!-- Connect -->
     <PackageVersion Include="StackExchange.Redis" Version="3.0.0" />
+    <PackageVersion Include="Testcontainers.Redis" Version="4.2.0" />
   </ItemGroup>
 </Project>

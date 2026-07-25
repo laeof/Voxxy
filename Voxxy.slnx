@@ -15,6 +15,7 @@
     <!-- Connect Module -->
     <Folder Name="/src/Connect/">
         <Project Path="src/Connect/Application/Application.csproj" />
+        <Project Path="src/Connect/Contracts/Contracts.csproj" />
         <Project Path="src/Connect/Domain/Domain.csproj" />
         <Project Path="src/Connect/Infrastructure/Infrastructure.csproj" />
         <Project Path="src/Connect/Presentation/Presentation.csproj" />
@@ -22,6 +23,8 @@
     </Folder>
     <Folder Name="/tests/">
         <Project Path="tests/ArchitectureTests/ArchitectureTests.csproj" />
+        <Project Path="tests/Connect.Domain.UnitTests/Connect.Domain.UnitTests.csproj" />
+        <Project Path="tests/Connect.Infrastructure.IntegrationTests/Connect.Infrastructure.IntegrationTests.csproj" />
     </Folder>
     <Project Path="docker-compose.dcproj">
         <Build />
