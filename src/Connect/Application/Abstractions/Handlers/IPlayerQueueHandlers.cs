@@ -15,6 +15,8 @@ public interface IShuffleQueueHandler : IConnectCommandHandler<ShuffleQueueComma
 public interface IUnshuffleQueueHandler : IConnectCommandHandler<UnshuffleQueueCommand>;
 public interface IChangeRepeatModeHandler : IConnectCommandHandler<ChangeRepeatModeCommand>;
 public interface INextQueueItemHandler : IConnectCommandHandler<NextQueueItemCommand>;
+public interface ICompleteCurrentTrackHandler :
+    IConnectCommandHandler<CompleteCurrentTrackCommand>;
 public interface IPreviousQueueItemHandler : IConnectCommandHandler<PreviousQueueItemCommand>;
 
 public interface IConnectCommandHandler<in TCommand>

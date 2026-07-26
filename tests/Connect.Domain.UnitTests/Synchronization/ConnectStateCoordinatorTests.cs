@@ -86,6 +86,94 @@ public sealed class ConnectStateCoordinatorTests
     }
 
     [Fact]
+    public void CompleteCurrentTrack_WithNextItem_AdvancesAndResetsPlayer()
+    {
+        QueueState queue = QueueWithTwoSelectedAtFirst();
+        Guid expected = queue.Items[1].QueueItemId;
+        var player = PlayerState.Restore(true, 1_000, Start, 50, 4);
+
+        bool handled = _coordinator.CompleteCurrentTrack(
+            queue,
+            player,
+            queue.Items[0].QueueItemId,
+            180_000,
+            Start.AddSeconds(2));
+
+        handled.ShouldBeTrue();
+        queue.CurrentQueueItemId.ShouldBe(expected);
+        player.IsPlaying.ShouldBeTrue();
+        player.PositionMs.ShouldBe(0);
+        player.Version.ShouldBe(5);
+    }
+
+    [Fact]
+    public void CompleteCurrentTrack_FinalItem_PausesAtCompletedPosition()
+    {
+        var queue = new QueueState();
+        QueueItem item = queue.Add(Guid.NewGuid());
+        queue.Select(item.QueueItemId);
+        var player = PlayerState.Restore(true, 0, Start, 50, 7);
+
+        _coordinator.CompleteCurrentTrack(
+            queue,
+            player,
+            item.QueueItemId,
+            180_000,
+            Start.AddMinutes(3));
+
+        player.IsPlaying.ShouldBeFalse();
+        player.PositionMs.ShouldBe(180_000);
+        player.PositionUpdatedAt.ShouldBe(Start.AddMinutes(3));
+        player.Version.ShouldBe(8);
+    }
+
+    [Theory]
+    [InlineData(RepeatMode.Track, 1)]
+    [InlineData(RepeatMode.Queue, 0)]
+    public void CompleteCurrentTrack_RespectsRepeatMode(
+        RepeatMode repeatMode,
+        int expectedIndex)
+    {
+        QueueState queue = QueueWithTwoSelectedAtSecond();
+        queue.SetRepeatMode(repeatMode);
+        var player = PlayerState.Restore(true, 10_000, Start, 50, 2);
+
+        _coordinator.CompleteCurrentTrack(
+            queue,
+            player,
+            queue.Items[1].QueueItemId,
+            180_000,
+            Start.AddSeconds(1));
+
+        int actualIndex = queue.Items
+            .Select((item, index) => (item, index))
+            .Single(value => value.item.QueueItemId == queue.CurrentQueueItemId)
+            .index;
+        actualIndex.ShouldBe(expectedIndex);
+        player.IsPlaying.ShouldBeTrue();
+        player.PositionMs.ShouldBe(0);
+    }
+
+    [Fact]
+    public void CompleteCurrentTrack_StaleQueueItem_DoesNothing()
+    {
+        QueueState queue = QueueWithTwoSelectedAtSecond();
+        long queueVersion = queue.Version;
+        var player = PlayerState.Restore(true, 1_000, Start, 50, 3);
+
+        bool handled = _coordinator.CompleteCurrentTrack(
+            queue,
+            player,
+            queue.Items[0].QueueItemId,
+            180_000,
+            Start.AddSeconds(2));
+
+        handled.ShouldBeFalse();
+        queue.Version.ShouldBe(queueVersion);
+        player.Version.ShouldBe(3);
+    }
+
+    [Fact]
     public void Previous_UsesDerivedPlayingPositionAboveThreshold()
     {
         QueueState queue = QueueWithTwoSelectedAtSecond();
@@ -197,6 +285,15 @@ public sealed class ConnectStateCoordinatorTests
         queue.Add(Guid.NewGuid());
         QueueItem second = queue.Add(Guid.NewGuid());
         queue.Select(second.QueueItemId);
+        return queue;
+    }
+
+    private static QueueState QueueWithTwoSelectedAtFirst()
+    {
+        var queue = new QueueState();
+        QueueItem first = queue.Add(Guid.NewGuid());
+        queue.Add(Guid.NewGuid());
+        queue.Select(first.QueueItemId);
         return queue;
     }
 }

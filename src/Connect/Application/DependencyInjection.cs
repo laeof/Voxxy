@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.AddScoped<IUnshuffleQueueHandler, UnshuffleQueueHandler>();
         services.AddScoped<IChangeRepeatModeHandler, ChangeRepeatModeHandler>();
         services.AddScoped<INextQueueItemHandler, NextQueueItemHandler>();
+        services.AddScoped<ICompleteCurrentTrackHandler, CompleteCurrentTrackHandler>();
         services.AddScoped<IPreviousQueueItemHandler, PreviousQueueItemHandler>();
         services.AddScoped<IConnectSnapshotReader, ConnectSnapshotReader>();
 

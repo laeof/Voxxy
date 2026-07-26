@@ -83,6 +83,32 @@ public sealed class PreviousQueueItemHandler(
             cancellationToken);
 }
 
+public sealed class CompleteCurrentTrackHandler(
+    IConnectStateStore store,
+    ConnectStateCoordinator coordinator)
+    : ICompleteCurrentTrackHandler
+{
+    public Task<ConnectApplicationResult> HandleAsync(
+        CompleteCurrentTrackCommand command,
+        CancellationToken cancellationToken = default) =>
+        CoordinatedHandler.ExecuteAsync(
+            store,
+            command,
+            nameof(CompleteCurrentTrackCommand),
+            [
+                CommandFingerprint.GuidValue(command.ExpectedQueueItemId),
+                command.CompletedPositionMs.ToString(
+                    System.Globalization.CultureInfo.InvariantCulture)
+            ],
+            (queue, player) => coordinator.CompleteCurrentTrack(
+                queue,
+                player,
+                command.ExpectedQueueItemId,
+                command.CompletedPositionMs,
+                command.ServerTime),
+            cancellationToken);
+}
+
 internal static class CoordinatedHandler
 {
     public static Task<ConnectApplicationResult> ExecuteAsync<TCommand>(
@@ -99,6 +125,7 @@ internal static class CoordinatedHandler
             RemoveQueueItemCommand value => CommandValidation.Validate(value),
             SelectQueueItemCommand value => CommandValidation.Validate(value),
             NextQueueItemCommand value => CommandValidation.Validate(value),
+            CompleteCurrentTrackCommand value => CommandValidation.Validate(value),
             PreviousQueueItemCommand value => CommandValidation.Validate(value),
             _ => throw new InvalidOperationException(
                 $"Unsupported coordinated command '{typeof(TCommand).Name}'.")
@@ -115,6 +142,8 @@ internal static class CoordinatedHandler
             SelectQueueItemCommand value =>
                 (value.UserId, value.CommandId, value.ServerTime),
             NextQueueItemCommand value => (value.UserId, value.CommandId, value.ServerTime),
+            CompleteCurrentTrackCommand value =>
+                (value.UserId, value.CommandId, value.ServerTime),
             PreviousQueueItemCommand value =>
                 (value.UserId, value.CommandId, value.ServerTime),
             _ => throw new InvalidOperationException(

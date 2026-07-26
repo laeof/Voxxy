@@ -288,6 +288,24 @@ public sealed class PlayerHubTests
     }
 
     [Fact]
+    public async Task CompleteCurrentTrack_Applied_BroadcastsCoordinatedResult()
+    {
+        (PlayerHub hub, TestConnectCommandFacade facade, TestBroadcaster broadcaster, _) =
+            CreateHub();
+        facade.Result = CoordinatedPlayerQueueResult();
+        var queueItemId = Guid.NewGuid();
+
+        await hub.CompleteCurrentTrack(
+            new CompleteCurrentTrackRequest(Guid.NewGuid(), queueItemId, 180_000));
+
+        broadcaster.Calls.ShouldBe(1);
+        CompleteCurrentTrackCommand command =
+            facade.LastCommand.ShouldBeOfType<CompleteCurrentTrackCommand>();
+        command.ExpectedQueueItemId.ShouldBe(queueItemId);
+        command.CompletedPositionMs.ShouldBe(180_000);
+    }
+
+    [Fact]
     public async Task DisconnectActiveOwner_BroadcastsPlayerPresenceResult()
     {
         (PlayerHub hub, TestConnectCommandFacade facade, TestBroadcaster broadcaster, _) =

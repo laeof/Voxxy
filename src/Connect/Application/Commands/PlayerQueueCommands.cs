@@ -66,6 +66,13 @@ public sealed record NextQueueItemCommand(
     Guid CommandId,
     DateTimeOffset ServerTime);
 
+public sealed record CompleteCurrentTrackCommand(
+    Guid UserId,
+    Guid CommandId,
+    Guid ExpectedQueueItemId,
+    long CompletedPositionMs,
+    DateTimeOffset ServerTime);
+
 public sealed record PreviousQueueItemCommand(
     Guid UserId,
     Guid CommandId,

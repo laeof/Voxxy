@@ -102,6 +102,22 @@ public sealed class PlayerState
 
     public bool ResetPosition(DateTimeOffset serverTime) => Seek(0, serverTime);
 
+    public bool Complete(long positionMs, DateTimeOffset serverTime)
+    {
+        ValidatePosition(positionMs);
+
+        if (!IsPlaying && PositionMs == positionMs)
+        {
+            return false;
+        }
+
+        IsPlaying = false;
+        PositionMs = positionMs;
+        PositionUpdatedAt = serverTime;
+        IncrementVersion();
+        return true;
+    }
+
     public bool ChangeVolume(int volumePercent)
     {
         ValidateVolume(volumePercent);

@@ -53,6 +53,9 @@ public interface IConnectCommandFacade
     Task<ConnectApplicationResult> NextQueueItemAsync(
         NextQueueItemCommand command,
         CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> CompleteCurrentTrackAsync(
+        CompleteCurrentTrackCommand command,
+        CancellationToken cancellationToken);
     Task<ConnectApplicationResult> PreviousQueueItemAsync(
         PreviousQueueItemCommand command,
         CancellationToken cancellationToken);

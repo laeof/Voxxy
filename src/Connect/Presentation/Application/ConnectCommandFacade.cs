@@ -21,6 +21,7 @@ public sealed class ConnectCommandFacade(
     IUnshuffleQueueHandler unshuffleQueue,
     IChangeRepeatModeHandler changeRepeatMode,
     INextQueueItemHandler nextQueueItem,
+    ICompleteCurrentTrackHandler completeCurrentTrack,
     IPreviousQueueItemHandler previousQueueItem,
     IConnectSnapshotReader snapshotReader)
     : IConnectCommandFacade
@@ -104,6 +105,11 @@ public sealed class ConnectCommandFacade(
         NextQueueItemCommand command,
         CancellationToken cancellationToken) =>
         nextQueueItem.HandleAsync(command, cancellationToken);
+
+    public Task<ConnectApplicationResult> CompleteCurrentTrackAsync(
+        CompleteCurrentTrackCommand command,
+        CancellationToken cancellationToken) =>
+        completeCurrentTrack.HandleAsync(command, cancellationToken);
 
     public Task<ConnectApplicationResult> PreviousQueueItemAsync(
         PreviousQueueItemCommand command,

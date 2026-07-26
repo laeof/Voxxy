@@ -20,6 +20,11 @@ public sealed record ChangePositionRequest(Guid CommandId, long PositionMs);
 
 public sealed record ChangeVolumeRequest(Guid CommandId, int VolumePercent);
 
+public sealed record CompleteCurrentTrackRequest(
+    Guid CommandId,
+    Guid ExpectedQueueItemId,
+    long CompletedPositionMs);
+
 public sealed record AddQueueItemRequest(
     Guid CommandId,
     Guid QueueItemId,

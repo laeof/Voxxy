@@ -163,6 +163,17 @@ internal static class CommandValidation
     public static string? Validate(NextQueueItemCommand command) =>
         ValidateCommand(command.UserId, command.CommandId);
 
+    public static string? Validate(CompleteCurrentTrackCommand command)
+    {
+        string? common = ValidateQueueItemCommand(
+            command.UserId,
+            command.CommandId,
+            command.ExpectedQueueItemId);
+        return common ?? (command.CompletedPositionMs < 0
+            ? "Completed position cannot be negative."
+            : null);
+    }
+
     public static string? Validate(PreviousQueueItemCommand command) =>
         ValidateCommand(command.UserId, command.CommandId);
 

@@ -150,6 +150,82 @@ public sealed class CoordinatedQueueCommandHandlerTests
     }
 
     [Fact]
+    public async Task CompleteCurrentTrack_CommitsPlayerAndQueueAtomically()
+    {
+        QueueState queue = QueueWithItems(2);
+        queue.Select(queue.Items[0].QueueItemId);
+        FakeConnectStateStore store = SnapshotStore(TestStates.PlayingPlayer(), queue);
+        store.CommitPlayerQueue = _ => TestResults.Commit(PersistenceStatus.Applied);
+
+        ConnectApplicationResult result = await CompleteHandler(store).HandleAsync(
+            new CompleteCurrentTrackCommand(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                queue.Items[0].QueueItemId,
+                180_000,
+                TestStates.Time.AddMinutes(3)));
+
+        result.Status.ShouldBe(ConnectCommandStatus.Applied);
+        result.Queue!.CurrentQueueItemId.ShouldBe(queue.Items[1].QueueItemId);
+        result.Player!.PositionMs.ShouldBe(0);
+        store.CommitPlayerQueueCalls.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task CompleteCurrentTrack_RetriesCasConflict()
+    {
+        QueueState first = QueueWithItems(2);
+        first.Select(first.Items[0].QueueItemId);
+        Guid expectedId = first.Items[0].QueueItemId;
+        var second = QueueState.Restore(
+            first.Items,
+            expectedId,
+            RepeatMode.None,
+            false,
+            first.Version + 1);
+        var store = new FakeConnectStateStore();
+        store.ReadSnapshot = (_, _) => TestResults.Snapshot(
+            TestStates.PlayingPlayer(),
+            store.ReadSnapshotCalls == 1 ? first : second);
+        store.CommitPlayerQueue = _ => TestResults.Commit(
+            store.CommitPlayerQueueCalls == 1
+                ? PersistenceStatus.VersionConflict
+                : PersistenceStatus.Applied);
+
+        ConnectApplicationResult result = await CompleteHandler(store).HandleAsync(
+            new CompleteCurrentTrackCommand(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                expectedId,
+                180_000,
+                TestStates.Time));
+
+        result.Status.ShouldBe(ConnectCommandStatus.Applied);
+        store.ReadSnapshotCalls.ShouldBe(2);
+        store.CommitPlayerQueueCalls.ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task CompleteCurrentTrack_DuplicateCommandIsReturned()
+    {
+        QueueState queue = QueueWithItems(2);
+        queue.Select(queue.Items[0].QueueItemId);
+        FakeConnectStateStore store = SnapshotStore(TestStates.PlayingPlayer(), queue);
+        store.CommitPlayerQueue = _ => TestResults.Commit(PersistenceStatus.Duplicate);
+
+        ConnectApplicationResult result = await CompleteHandler(store).HandleAsync(
+            new CompleteCurrentTrackCommand(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                queue.Items[0].QueueItemId,
+                180_000,
+                TestStates.Time));
+
+        result.Status.ShouldBe(ConnectCommandStatus.Duplicate);
+        store.CommitPlayerQueueCalls.ShouldBe(1);
+    }
+
+    [Fact]
     public async Task PreviousQueueItem_UsesDomainCoordinator()
     {
         QueueState queue = QueueWithItems(2);
@@ -226,6 +302,9 @@ public sealed class CoordinatedQueueCommandHandlerTests
         new(store, new ConnectStateCoordinator());
 
     private static SelectQueueItemHandler SelectHandler(FakeConnectStateStore store) =>
+        new(store, new ConnectStateCoordinator());
+
+    private static CompleteCurrentTrackHandler CompleteHandler(FakeConnectStateStore store) =>
         new(store, new ConnectStateCoordinator());
 
     private static QueueState QueueWithItems(int count)

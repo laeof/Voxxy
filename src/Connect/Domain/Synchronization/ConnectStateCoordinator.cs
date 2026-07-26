@@ -66,6 +66,34 @@ public sealed class ConnectStateCoordinator
         return result;
     }
 
+    public bool CompleteCurrentTrack(
+        QueueState queue,
+        PlayerState player,
+        Guid expectedQueueItemId,
+        long completedPositionMs,
+        DateTimeOffset serverTime)
+    {
+        ArgumentNullException.ThrowIfNull(queue);
+        ArgumentNullException.ThrowIfNull(player);
+
+        if (queue.CurrentItem?.QueueItemId != expectedQueueItemId)
+        {
+            return false;
+        }
+
+        QueueNavigationResult result = queue.Next();
+        if (result.ShouldPause)
+        {
+            player.Complete(completedPositionMs, serverTime);
+        }
+        else if (result.ShouldResetPosition)
+        {
+            player.ResetPosition(serverTime);
+        }
+
+        return true;
+    }
+
     public QueueNavigationResult Previous(
         QueueState queue,
         PlayerState player,

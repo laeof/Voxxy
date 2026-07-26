@@ -304,6 +304,22 @@ public sealed class PlayerHub(
                 new NextQueueItemCommand(userId, request!.CommandId, serverTime),
                 cancellationToken));
 
+    public Task<ConnectCommandAck> CompleteCurrentTrack(
+        CompleteCurrentTrackRequest? request) =>
+        ExecuteMutationAsync(
+            request,
+            request?.CommandId,
+            nameof(CompleteCurrentTrack),
+            (userId, serverTime, cancellationToken) =>
+                facade.CompleteCurrentTrackAsync(
+                    new CompleteCurrentTrackCommand(
+                        userId,
+                        request!.CommandId,
+                        request.ExpectedQueueItemId,
+                        request.CompletedPositionMs,
+                        serverTime),
+                    cancellationToken));
+
     public Task<ConnectCommandAck> PreviousQueueItem(CommandRequest? request) =>
         ExecuteMutationAsync(
             request,
