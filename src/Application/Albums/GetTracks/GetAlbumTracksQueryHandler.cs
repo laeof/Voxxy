@@ -24,6 +24,7 @@ internal sealed class GetAlbumTracksQueryHandler(IApplicationDbContext context, 
             .Where(album => album.Id == query.AlbumId)
             .SelectMany(album => album.Tracks)
             .OrderBy(track => track.AlbumOrder)
+            .ThenBy(track => track.Id)
             .Select(track => new TrackResponse
             {
                 Id = track.Id,

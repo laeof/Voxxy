@@ -35,6 +35,7 @@ internal sealed class GetAlbumByIdQueryHandler(IApplicationDbContext context, IM
                 }).ToList(),
                 Tracks = album.Tracks
                     .OrderBy(track => track.AlbumOrder)
+                    .ThenBy(track => track.Id)
                     .Select(track => new TrackResponse
                     {
                         Id = track.Id,
@@ -42,6 +43,7 @@ internal sealed class GetAlbumByIdQueryHandler(IApplicationDbContext context, IM
                         ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, album.ImageKey).ToString(),
                         Name = track.Name,
                         Duration = track.Duration,
+                        AlbumOrder = track.AlbumOrder,
                         Artists = album.Artists.Select(artist => new ArtistResponse
                         {
                             Id = artist.Id,

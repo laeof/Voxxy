@@ -238,6 +238,30 @@ public sealed class ConnectStateCoordinatorTests
         player.PositionMs.ShouldBe(0);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void StartPlaybackContext_UsesZeroBasedStartIndex(int startIndex)
+    {
+        var queue = new QueueState();
+        QueueItem[] replacement =
+        [
+            new(Guid.NewGuid(), Guid.NewGuid(), 42),
+            new(Guid.NewGuid(), Guid.NewGuid(), 7)
+        ];
+
+        _coordinator.StartPlaybackContext(
+            queue,
+            new PlayerState(Start),
+            PlaybackSourceType.Album,
+            Guid.NewGuid(),
+            replacement,
+            startIndex,
+            Start);
+
+        queue.CurrentQueueItemId.ShouldBe(replacement[startIndex].QueueItemId);
+    }
+
     [Fact]
     public void StartPlaybackContext_SamePlayingContext_IsNoOp()
     {

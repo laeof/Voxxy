@@ -23,6 +23,8 @@ internal sealed class GetPlaylistTracksQueryHandler(IApplicationDbContext contex
         List<TrackResponse>? tracks = await context.Playlists
             .Where(playlist => playlist.Id == query.PlaylistId)
             .SelectMany(playlist => playlist.Tracks)
+            .OrderBy(track => track.CreatedAt)
+            .ThenBy(track => track.Id)
             .Select(track => new TrackResponse
             {
                 Id = track.Id,

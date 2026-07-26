@@ -61,7 +61,10 @@ internal sealed class GetUserFollowsQueryHandler(
                                 Id = x.CreatedByUser.Id,
                                 Name = x.CreatedByUser.FirstName + " " + x.CreatedByUser.LastName,
                             },
-                            Tracks = x.Tracks.Select(track => new TrackResponse
+                            Tracks = x.Tracks
+                                .OrderBy(track => track.CreatedAt)
+                                .ThenBy(track => track.Id)
+                                .Select(track => new TrackResponse
                             {
                                 Id = track.Id,
                                 Name = track.Name,
@@ -117,7 +120,10 @@ internal sealed class GetUserFollowsQueryHandler(
                                 Name = x.Artists[0].Name,
                                 ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Artists, x.Artists[0].ImageKey).ToString(),
                             },
-                            Tracks = x.Tracks.Select(track => new TrackResponse
+                            Tracks = x.Tracks
+                                .OrderBy(track => track.AlbumOrder)
+                                .ThenBy(track => track.Id)
+                                .Select(track => new TrackResponse
                             {
                                 Id = track.Id,
                                 Name = track.Name,
