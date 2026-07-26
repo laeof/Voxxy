@@ -1,6 +1,9 @@
 using System.Globalization;
 using System.Text.Json;
 using Connect.Application.Abstractions.Persistence;
+using Connect.Application.Commands;
+using Connect.Application.PlayerQueue;
+using Connect.Application.Results;
 using Connect.Domain.Player;
 using Connect.Domain.Presence;
 using Connect.Domain.Queue;
@@ -92,6 +95,97 @@ public sealed class RedisConnectStateStoreTests
         read.State.CurrentQueueItemId.ShouldBe(second.QueueItemId);
         read.State.IsShuffled.ShouldBeTrue();
         read.State.RepeatMode.ShouldBe(RepeatMode.Track);
+    }
+
+    [Fact]
+    public async Task Queue_LegacyJsonWithoutPlaybackSource_DeserializesAsManualContext()
+    {
+        var userId = Guid.NewGuid();
+        IDatabase database = _fixture.Multiplexer.GetDatabase();
+        await database.HashSetAsync(
+            ConnectRedisKeys.Queue(userId),
+            [
+                new HashEntry(
+                    "json",
+                    """
+                    {"items":[],"currentQueueItemId":null,"repeatMode":"none","isShuffled":false,"version":3}
+                    """),
+                new HashEntry("version", "3")
+            ]);
+
+        PersistenceReadResult<QueueState> read = await _store.ReadQueueAsync(userId);
+
+        read.Status.ShouldBe(PersistenceStatus.Success);
+        read.State!.Version.ShouldBe(3);
+        read.State.SourceId.ShouldBeNull();
+        read.State.SourceType.ShouldBeNull();
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task StartPlaybackContext_ReplacesExistingRedisContext(bool playing)
+    {
+        var userId = Guid.NewGuid();
+        var coordinator = new ConnectStateCoordinator();
+        var handler = new StartPlaybackContextHandler(_store, coordinator);
+        DateTimeOffset commandTime = Start.AddSeconds(10);
+        var firstSourceId = Guid.NewGuid();
+        var secondSourceId = Guid.NewGuid();
+        PlaybackContextItem[] firstItems =
+        [
+            new(Guid.NewGuid(), Guid.NewGuid()),
+            new(Guid.NewGuid(), Guid.NewGuid())
+        ];
+        PlaybackContextItem[] secondItems =
+        [
+            new(Guid.NewGuid(), Guid.NewGuid()),
+            new(Guid.NewGuid(), Guid.NewGuid())
+        ];
+
+        ConnectApplicationResult first = await handler.HandleAsync(
+            new StartPlaybackContextCommand(
+                userId,
+                Guid.NewGuid(),
+                firstSourceId,
+                PlaybackSourceType.Album,
+                firstItems,
+                0,
+                Start));
+        first.Status.ShouldBe(ConnectCommandStatus.Applied);
+        if (!playing)
+        {
+            PlayerState player = (await _store.ReadPlayerAsync(userId, commandTime)).State!;
+            player.Pause(commandTime);
+            PersistenceCommitResult pauseCommit = await _store.TryCommitPlayerAsync(
+                new PlayerCommit(
+                    userId,
+                    Command("pause", "replacement-test"),
+                    first.Player!.Version,
+                    player));
+            pauseCommit.Status.ShouldBe(PersistenceStatus.Applied);
+        }
+
+        ConnectApplicationResult replacement = await handler.HandleAsync(
+            new StartPlaybackContextCommand(
+                userId,
+                Guid.NewGuid(),
+                secondSourceId,
+                PlaybackSourceType.Album,
+                secondItems,
+                1,
+                commandTime));
+        ConnectSnapshotReadResult snapshot =
+            await _store.ReadSnapshotAsync(userId, commandTime);
+
+        replacement.Status.ShouldBe(ConnectCommandStatus.Applied);
+        snapshot.Status.ShouldBe(PersistenceStatus.Success);
+        snapshot.Snapshot!.Queue.SourceId.ShouldBe(secondSourceId);
+        snapshot.Snapshot.Queue.SourceType.ShouldBe(PlaybackSourceType.Album);
+        snapshot.Snapshot.Queue.CurrentQueueItemId.ShouldBe(secondItems[1].QueueItemId);
+        snapshot.Snapshot.Queue.Items.ShouldNotContain(
+            item => firstItems.Any(firstItem => firstItem.QueueItemId == item.QueueItemId));
+        snapshot.Snapshot.Player.IsPlaying.ShouldBeTrue();
     }
 
     [Fact]

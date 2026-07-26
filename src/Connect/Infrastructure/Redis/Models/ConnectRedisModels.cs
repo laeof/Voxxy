@@ -14,6 +14,16 @@ public enum RepeatModeRedisModel
     Track
 }
 
+public enum PlaybackSourceTypeRedisModel
+{
+    Playlist,
+    Album,
+    Release,
+    LikedSongs,
+    Search,
+    Manual
+}
+
 public sealed record QueueItemRedisModel(
     Guid QueueItemId,
     Guid TrackId,
@@ -24,7 +34,9 @@ public sealed record QueueStateRedisModel(
     Guid? CurrentQueueItemId,
     RepeatModeRedisModel RepeatMode,
     bool IsShuffled,
-    long Version);
+    long Version,
+    Guid? SourceId = null,
+    PlaybackSourceTypeRedisModel? SourceType = null);
 
 public sealed record DeviceConnectionRedisModel(
     string ConnectionId,

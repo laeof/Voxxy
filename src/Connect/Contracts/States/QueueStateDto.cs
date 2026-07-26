@@ -7,6 +7,16 @@ public enum RepeatModeDto
     Track
 }
 
+public enum PlaybackSourceTypeDto
+{
+    Playlist,
+    Album,
+    Release,
+    LikedSongs,
+    Search,
+    Manual
+}
+
 public sealed record QueueItemDto(
     Guid QueueItemId,
     Guid TrackId,
@@ -17,4 +27,6 @@ public sealed record QueueStateDto(
     Guid? CurrentQueueItemId,
     RepeatModeDto RepeatMode,
     bool IsShuffled,
-    long Version);
+    long Version,
+    Guid? SourceId = null,
+    PlaybackSourceTypeDto? SourceType = null);

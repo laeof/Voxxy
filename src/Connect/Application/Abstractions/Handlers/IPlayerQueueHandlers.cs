@@ -17,6 +17,8 @@ public interface IChangeRepeatModeHandler : IConnectCommandHandler<ChangeRepeatM
 public interface INextQueueItemHandler : IConnectCommandHandler<NextQueueItemCommand>;
 public interface ICompleteCurrentTrackHandler :
     IConnectCommandHandler<CompleteCurrentTrackCommand>;
+public interface IStartPlaybackContextHandler :
+    IConnectCommandHandler<StartPlaybackContextCommand>;
 public interface IPreviousQueueItemHandler : IConnectCommandHandler<PreviousQueueItemCommand>;
 
 public interface IConnectCommandHandler<in TCommand>

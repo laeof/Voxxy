@@ -320,6 +320,79 @@ public sealed class PlayerHub(
                         serverTime),
                     cancellationToken));
 
+    public async Task<ConnectCommandAck> StartPlaybackContext(
+        StartPlaybackContextRequest? request)
+    {
+        Guid userId = GetUserId();
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            PlaybackContextItemRequest? startItem = null;
+            if (request?.StartIndex is int startIndex &&
+                startIndex >= 0 &&
+                startIndex < request.Items.Count)
+            {
+                startItem = request.Items[startIndex];
+            }
+            else if (request?.Items is { Count: > 0 } fallbackItems)
+            {
+                startItem = fallbackItems[0];
+            }
+            ConnectHubLog.StartPlaybackContextReceived(
+                logger,
+                userId,
+                Context.ConnectionId,
+                request?.CommandId,
+                request?.SourceId,
+                request is null ? null : (int?)request.SourceType,
+                request?.StartIndex,
+                startItem?.TrackId,
+                startItem?.QueueItemId,
+                request?.Items?.Count ?? 0);
+        }
+
+        ConnectCommandAck response = await ExecuteMutationAsync(
+            request,
+            request?.CommandId,
+            nameof(StartPlaybackContext),
+            (userId, serverTime, cancellationToken) =>
+                facade.StartPlaybackContextAsync(
+                    new StartPlaybackContextCommand(
+                        userId,
+                        request!.CommandId,
+                        request.SourceId,
+                        (PlaybackSourceType)request.SourceType,
+                        request.Items?.Select(item => new PlaybackContextItem(
+                                item.QueueItemId,
+                                item.TrackId))
+                            .ToArray() ?? [],
+                        request.StartIndex,
+                        serverTime),
+                    cancellationToken),
+            (exception, failedUserId) => ConnectHubLog.StartPlaybackContextFailed(
+                logger,
+                exception,
+                failedUserId,
+                Context.ConnectionId,
+                request?.CommandId,
+                request?.SourceId,
+                request is null ? null : (int?)request.SourceType,
+                request?.StartIndex,
+                request?.Items?.Count ?? 0));
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            ConnectHubLog.StartPlaybackContextResponseReady(
+                logger,
+                userId,
+                Context.ConnectionId,
+                request?.CommandId,
+                response.Status,
+                response.Outcome?.PlayerVersion,
+                response.Outcome?.QueueVersion,
+                response.Outcome?.PresenceVersion);
+        }
+        return response;
+    }
+
     public Task<ConnectCommandAck> PreviousQueueItem(CommandRequest? request) =>
         ExecuteMutationAsync(
             request,
@@ -361,7 +434,8 @@ public sealed class PlayerHub(
         TRequest? request,
         Guid? commandId,
         string commandType,
-        Func<Guid, DateTimeOffset, CancellationToken, Task<ConnectApplicationResult>> execute)
+        Func<Guid, DateTimeOffset, CancellationToken, Task<ConnectApplicationResult>> execute,
+        Action<Exception, Guid>? logUnexpected = null)
         where TRequest : class
     {
         Guid userId = GetUserId();
@@ -449,6 +523,7 @@ public sealed class PlayerHub(
             metrics.Failures.Add(
                 1,
                 new KeyValuePair<string, object?>("command.type", commandType));
+            logUnexpected?.Invoke(exception, userId);
             throw HandleUnexpected(exception, userId, commandId, commandType);
         }
     }

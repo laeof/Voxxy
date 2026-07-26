@@ -73,6 +73,17 @@ public sealed record CompleteCurrentTrackCommand(
     long CompletedPositionMs,
     DateTimeOffset ServerTime);
 
+public sealed record PlaybackContextItem(Guid QueueItemId, Guid TrackId);
+
+public sealed record StartPlaybackContextCommand(
+    Guid UserId,
+    Guid CommandId,
+    Guid SourceId,
+    PlaybackSourceType SourceType,
+    IReadOnlyList<PlaybackContextItem> Items,
+    int? StartIndex,
+    DateTimeOffset ServerTime);
+
 public sealed record PreviousQueueItemCommand(
     Guid UserId,
     Guid CommandId,

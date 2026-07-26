@@ -7,6 +7,16 @@ public enum RepeatModeContract
     Track
 }
 
+public enum PlaybackSourceTypeContract
+{
+    Playlist,
+    Album,
+    Release,
+    LikedSongs,
+    Search,
+    Manual
+}
+
 public sealed record RegisterConnectionRequest(
     Guid CommandId,
     Guid DeviceId,
@@ -24,6 +34,15 @@ public sealed record CompleteCurrentTrackRequest(
     Guid CommandId,
     Guid ExpectedQueueItemId,
     long CompletedPositionMs);
+
+public sealed record PlaybackContextItemRequest(Guid QueueItemId, Guid TrackId);
+
+public sealed record StartPlaybackContextRequest(
+    Guid CommandId,
+    Guid SourceId,
+    PlaybackSourceTypeContract SourceType,
+    IReadOnlyList<PlaybackContextItemRequest> Items,
+    int? StartIndex);
 
 public sealed record AddQueueItemRequest(
     Guid CommandId,

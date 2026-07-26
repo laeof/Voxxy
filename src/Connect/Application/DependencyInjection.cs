@@ -31,6 +31,7 @@ public static class DependencyInjection
         services.AddScoped<IChangeRepeatModeHandler, ChangeRepeatModeHandler>();
         services.AddScoped<INextQueueItemHandler, NextQueueItemHandler>();
         services.AddScoped<ICompleteCurrentTrackHandler, CompleteCurrentTrackHandler>();
+        services.AddScoped<IStartPlaybackContextHandler, StartPlaybackContextHandler>();
         services.AddScoped<IPreviousQueueItemHandler, PreviousQueueItemHandler>();
         services.AddScoped<IConnectSnapshotReader, ConnectSnapshotReader>();
 

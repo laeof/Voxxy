@@ -33,7 +33,11 @@ internal static class ConnectRedisMapper
             state.CurrentQueueItemId,
             (RepeatModeRedisModel)state.RepeatMode,
             state.IsShuffled,
-            state.Version);
+            state.Version,
+            state.SourceId,
+            state.SourceType is null
+                ? null
+                : (PlaybackSourceTypeRedisModel)state.SourceType);
 
     public static QueueState ToDomain(QueueStateRedisModel model) =>
         QueueState.Restore(
@@ -44,7 +48,9 @@ internal static class ConnectRedisMapper
             model.CurrentQueueItemId,
             (RepeatMode)model.RepeatMode,
             model.IsShuffled,
-            model.Version);
+            model.Version,
+            model.SourceId,
+            model.SourceType is null ? null : (PlaybackSourceType)model.SourceType);
 
     public static PresenceStateRedisModel ToRedis(PresenceState state) =>
         new(

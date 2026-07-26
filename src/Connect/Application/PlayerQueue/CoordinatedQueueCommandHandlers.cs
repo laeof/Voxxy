@@ -3,6 +3,7 @@ using Connect.Application.Abstractions.Persistence;
 using Connect.Application.Commands;
 using Connect.Application.Common;
 using Connect.Application.Results;
+using Connect.Domain.Queue;
 using Connect.Domain.Synchronization;
 
 namespace Connect.Application.PlayerQueue;
@@ -109,6 +110,42 @@ public sealed class CompleteCurrentTrackHandler(
             cancellationToken);
 }
 
+public sealed class StartPlaybackContextHandler(
+    IConnectStateStore store,
+    ConnectStateCoordinator coordinator)
+    : IStartPlaybackContextHandler
+{
+    public Task<ConnectApplicationResult> HandleAsync(
+        StartPlaybackContextCommand command,
+        CancellationToken cancellationToken = default) =>
+        CoordinatedHandler.ExecuteAsync(
+            store,
+            command,
+            nameof(StartPlaybackContextCommand),
+            [
+                CommandFingerprint.GuidValue(command.SourceId),
+                command.SourceType.ToString(),
+                command.StartIndex?.ToString(
+                    System.Globalization.CultureInfo.InvariantCulture),
+                .. command.Items.Select(item =>
+                    $"{CommandFingerprint.GuidValue(item.QueueItemId)}:" +
+                    CommandFingerprint.GuidValue(item.TrackId))
+            ],
+            (queue, player) => coordinator.StartPlaybackContext(
+                queue,
+                player,
+                command.SourceType,
+                command.SourceId,
+                command.Items.Select((item, index) => new QueueItem(
+                        item.QueueItemId,
+                        item.TrackId,
+                        index))
+                    .ToArray(),
+                command.StartIndex,
+                command.ServerTime),
+            cancellationToken);
+}
+
 internal static class CoordinatedHandler
 {
     public static Task<ConnectApplicationResult> ExecuteAsync<TCommand>(
@@ -126,6 +163,7 @@ internal static class CoordinatedHandler
             SelectQueueItemCommand value => CommandValidation.Validate(value),
             NextQueueItemCommand value => CommandValidation.Validate(value),
             CompleteCurrentTrackCommand value => CommandValidation.Validate(value),
+            StartPlaybackContextCommand value => CommandValidation.Validate(value),
             PreviousQueueItemCommand value => CommandValidation.Validate(value),
             _ => throw new InvalidOperationException(
                 $"Unsupported coordinated command '{typeof(TCommand).Name}'.")
@@ -143,6 +181,8 @@ internal static class CoordinatedHandler
                 (value.UserId, value.CommandId, value.ServerTime),
             NextQueueItemCommand value => (value.UserId, value.CommandId, value.ServerTime),
             CompleteCurrentTrackCommand value =>
+                (value.UserId, value.CommandId, value.ServerTime),
+            StartPlaybackContextCommand value =>
                 (value.UserId, value.CommandId, value.ServerTime),
             PreviousQueueItemCommand value =>
                 (value.UserId, value.CommandId, value.ServerTime),

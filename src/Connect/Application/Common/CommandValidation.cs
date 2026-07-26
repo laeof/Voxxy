@@ -1,4 +1,5 @@
 using Connect.Application.Commands;
+using Connect.Domain.Queue;
 
 namespace Connect.Application.Common;
 
@@ -172,6 +173,45 @@ internal static class CommandValidation
         return common ?? (command.CompletedPositionMs < 0
             ? "Completed position cannot be negative."
             : null);
+    }
+
+    public static string? Validate(StartPlaybackContextCommand command)
+    {
+        string? common = ValidateCommand(command.UserId, command.CommandId);
+        if (common is not null)
+        {
+            return common;
+        }
+        if (command.SourceId == Guid.Empty)
+        {
+            return "Playback source ID is required.";
+        }
+        if (!Enum.IsDefined(command.SourceType))
+        {
+            return $"Playback source type '{command.SourceType}' is not defined.";
+        }
+        if (command.Items is null || command.Items.Count == 0)
+        {
+            return "Playback source cannot be empty.";
+        }
+        if (command.Items.Count > QueueState.MaximumItemCount)
+        {
+            return $"Playback source cannot contain more than {QueueState.MaximumItemCount} items.";
+        }
+        if (command.Items.Any(item =>
+                item.QueueItemId == Guid.Empty || item.TrackId == Guid.Empty))
+        {
+            return "Queue and track IDs are required.";
+        }
+        if (command.Items.Select(item => item.QueueItemId).Distinct().Count() !=
+            command.Items.Count)
+        {
+            return "Queue item IDs must be unique.";
+        }
+        return command.StartIndex is < 0 ||
+            command.StartIndex >= command.Items.Count
+                ? "Start index must identify an item in the playback source."
+                : null;
     }
 
     public static string? Validate(PreviousQueueItemCommand command) =>

@@ -155,6 +155,32 @@ public sealed class ConnectStateCoordinatorTests
     }
 
     [Fact]
+    public void StartPlaybackContext_ReplacingPausedContext_IncrementsPlayerVersionOnce()
+    {
+        QueueState queue = ContextQueue(Guid.NewGuid());
+        var player = PlayerState.Restore(false, 9_000, Start, 50, 3);
+        QueueItem[] replacement =
+        [
+            new(Guid.NewGuid(), Guid.NewGuid(), 0),
+            new(Guid.NewGuid(), Guid.NewGuid(), 1)
+        ];
+
+        _coordinator.StartPlaybackContext(
+            queue,
+            player,
+            PlaybackSourceType.Album,
+            Guid.NewGuid(),
+            replacement,
+            1,
+            Start.AddSeconds(1));
+
+        player.Version.ShouldBe(4);
+        player.IsPlaying.ShouldBeTrue();
+        player.PositionMs.ShouldBe(0);
+        queue.CurrentQueueItemId.ShouldBe(replacement[1].QueueItemId);
+    }
+
+    [Fact]
     public void CompleteCurrentTrack_StaleQueueItem_DoesNothing()
     {
         QueueState queue = QueueWithTwoSelectedAtSecond();
@@ -171,6 +197,114 @@ public sealed class ConnectStateCoordinatorTests
         handled.ShouldBeFalse();
         queue.Version.ShouldBe(queueVersion);
         player.Version.ShouldBe(3);
+    }
+
+    [Fact]
+    public void StartPlaybackContext_ReplacesDifferentContextAndStartsFirstTrack()
+    {
+        var queue = new QueueState();
+        QueueItem old = queue.Add(Guid.NewGuid());
+        queue.ReplaceContext(
+            PlaybackSourceType.Playlist,
+            Guid.NewGuid(),
+            [old],
+            0);
+        queue.SetRepeatMode(RepeatMode.Queue);
+        queue.Shuffle([old.QueueItemId]);
+        var player = PlayerState.Restore(false, 9_000, Start, 50, 2);
+        var sourceId = Guid.NewGuid();
+        QueueItem[] replacement =
+        [
+            new(Guid.NewGuid(), Guid.NewGuid(), 0),
+            new(Guid.NewGuid(), Guid.NewGuid(), 1)
+        ];
+
+        _coordinator.StartPlaybackContext(
+            queue,
+            player,
+            PlaybackSourceType.Album,
+            sourceId,
+            replacement,
+            null,
+            Start.AddSeconds(1));
+
+        queue.SourceId.ShouldBe(sourceId);
+        queue.SourceType.ShouldBe(PlaybackSourceType.Album);
+        queue.Items.ShouldBe(replacement);
+        queue.CurrentQueueItemId.ShouldBe(replacement[0].QueueItemId);
+        queue.IsShuffled.ShouldBeFalse();
+        queue.RepeatMode.ShouldBe(RepeatMode.Queue);
+        player.IsPlaying.ShouldBeTrue();
+        player.PositionMs.ShouldBe(0);
+    }
+
+    [Fact]
+    public void StartPlaybackContext_SamePlayingContext_IsNoOp()
+    {
+        var sourceId = Guid.NewGuid();
+        QueueState queue = ContextQueue(sourceId);
+        QueueItem[] originalItems = [.. queue.Items];
+        long queueVersion = queue.Version;
+        var player = PlayerState.Restore(true, 5_000, Start, 50, 3);
+
+        _coordinator.StartPlaybackContext(
+            queue,
+            player,
+            PlaybackSourceType.Playlist,
+            sourceId,
+            [new(Guid.NewGuid(), Guid.NewGuid(), 0)],
+            null,
+            Start.AddSeconds(1));
+
+        queue.Items.ShouldBe(originalItems);
+        queue.Version.ShouldBe(queueVersion);
+        player.Version.ShouldBe(3);
+    }
+
+    [Fact]
+    public void StartPlaybackContext_SamePausedContext_ResumesWithoutReset()
+    {
+        var sourceId = Guid.NewGuid();
+        QueueState queue = ContextQueue(sourceId);
+        Guid currentId = queue.CurrentQueueItemId!.Value;
+        var player = PlayerState.Restore(false, 5_000, Start, 50, 3);
+
+        _coordinator.StartPlaybackContext(
+            queue,
+            player,
+            PlaybackSourceType.Playlist,
+            sourceId,
+            queue.Items,
+            null,
+            Start.AddSeconds(1));
+
+        queue.CurrentQueueItemId.ShouldBe(currentId);
+        player.IsPlaying.ShouldBeTrue();
+        player.PositionMs.ShouldBe(5_000);
+    }
+
+    [Fact]
+    public void StartPlaybackContext_ExplicitTrackInSameContext_SelectsAndStarts()
+    {
+        var sourceId = Guid.NewGuid();
+        QueueState queue = ContextQueue(sourceId);
+        QueueItem[] originalItems = [.. queue.Items];
+        var player = PlayerState.Restore(false, 5_000, Start, 50, 3);
+
+        _coordinator.StartPlaybackContext(
+            queue,
+            player,
+            PlaybackSourceType.Playlist,
+            sourceId,
+            queue.Items,
+            1,
+            Start.AddSeconds(1));
+
+        queue.Items.ShouldBe(originalItems);
+        queue.CurrentQueueItemId.ShouldBe(originalItems[1].QueueItemId);
+        player.IsPlaying.ShouldBeTrue();
+        player.PositionMs.ShouldBe(0);
+        player.Version.ShouldBe(4);
     }
 
     [Fact]
@@ -295,5 +429,22 @@ public sealed class ConnectStateCoordinatorTests
         queue.Add(Guid.NewGuid());
         queue.Select(first.QueueItemId);
         return queue;
+    }
+
+    private static QueueState ContextQueue(Guid sourceId)
+    {
+        QueueItem[] items =
+        [
+            new(Guid.NewGuid(), Guid.NewGuid(), 0),
+            new(Guid.NewGuid(), Guid.NewGuid(), 1)
+        ];
+        return QueueState.Restore(
+            items,
+            items[0].QueueItemId,
+            RepeatMode.None,
+            false,
+            4,
+            sourceId,
+            PlaybackSourceType.Playlist);
     }
 }

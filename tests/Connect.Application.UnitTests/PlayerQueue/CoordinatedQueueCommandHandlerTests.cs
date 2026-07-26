@@ -226,6 +226,106 @@ public sealed class CoordinatedQueueCommandHandlerTests
     }
 
     [Fact]
+    public async Task StartPlaybackContext_CommitsReplacementAtomically()
+    {
+        FakeConnectStateStore store = SnapshotStore(
+            new PlayerState(TestStates.Time),
+            new QueueState());
+        store.CommitPlayerQueue = _ => TestResults.Commit(PersistenceStatus.Applied);
+        var sourceId = Guid.NewGuid();
+        PlaybackContextItem[] items =
+        [
+            new(Guid.NewGuid(), Guid.NewGuid()),
+            new(Guid.NewGuid(), Guid.NewGuid())
+        ];
+
+        ConnectApplicationResult result = await StartContextHandler(store).HandleAsync(
+            new StartPlaybackContextCommand(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                sourceId,
+                PlaybackSourceType.Album,
+                items,
+                1,
+                TestStates.Time));
+
+        result.Status.ShouldBe(ConnectCommandStatus.Applied);
+        result.Queue!.SourceId.ShouldBe(sourceId);
+        result.Queue.SourceType.ShouldBe(Connect.Contracts.States.PlaybackSourceTypeDto.Album);
+        result.Queue.CurrentQueueItemId.ShouldBe(items[1].QueueItemId);
+        result.Player!.IsPlaying.ShouldBeTrue();
+        store.CommitPlayerQueueCalls.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task StartPlaybackContext_SamePlayingContext_RecordsNoChanges()
+    {
+        var sourceId = Guid.NewGuid();
+        QueueState queue = QueueWithItems(2);
+        queue = QueueState.Restore(
+            queue.Items,
+            queue.Items[0].QueueItemId,
+            RepeatMode.None,
+            false,
+            queue.Version,
+            sourceId,
+            PlaybackSourceType.Playlist);
+        FakeConnectStateStore store = SnapshotStore(TestStates.PlayingPlayer(), queue);
+        store.RecordCommand = _ => TestResults.Commit(PersistenceStatus.Applied);
+
+        ConnectApplicationResult result = await StartContextHandler(store).HandleAsync(
+            ContextCommand(sourceId, queue));
+
+        result.Status.ShouldBe(ConnectCommandStatus.NoChanges);
+        store.RecordCommandCalls.ShouldBe(1);
+        store.CommitPlayerQueueCalls.ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task StartPlaybackContext_OnConflict_RereadsFreshSnapshot()
+    {
+        var sourceId = Guid.NewGuid();
+        QueueState first = QueueWithItems(1);
+        QueueState second = QueueWithItems(1);
+        var store = new FakeConnectStateStore();
+        store.ReadSnapshot = (_, _) => TestResults.Snapshot(
+            new PlayerState(TestStates.Time),
+            store.ReadSnapshotCalls == 1 ? first : second);
+        store.CommitPlayerQueue = _ => TestResults.Commit(
+            store.CommitPlayerQueueCalls == 1
+                ? PersistenceStatus.VersionConflict
+                : PersistenceStatus.Applied);
+        StartPlaybackContextCommand command = ContextCommand(sourceId, first);
+
+        ConnectApplicationResult result = await StartContextHandler(store).HandleAsync(command);
+
+        result.Status.ShouldBe(ConnectCommandStatus.Applied);
+        store.ReadSnapshotCalls.ShouldBe(2);
+        store.CommitPlayerQueueCalls.ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task StartPlaybackContext_EmptySource_ReturnsValidationFailure()
+    {
+        FakeConnectStateStore store = SnapshotStore(
+            new PlayerState(TestStates.Time),
+            new QueueState());
+
+        ConnectApplicationResult result = await StartContextHandler(store).HandleAsync(
+            new StartPlaybackContextCommand(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                PlaybackSourceType.Playlist,
+                [],
+                null,
+                TestStates.Time));
+
+        result.Status.ShouldBe(ConnectCommandStatus.ValidationFailed);
+        store.ReadSnapshotCalls.ShouldBe(0);
+    }
+
+    [Fact]
     public async Task PreviousQueueItem_UsesDomainCoordinator()
     {
         QueueState queue = QueueWithItems(2);
@@ -306,6 +406,25 @@ public sealed class CoordinatedQueueCommandHandlerTests
 
     private static CompleteCurrentTrackHandler CompleteHandler(FakeConnectStateStore store) =>
         new(store, new ConnectStateCoordinator());
+
+    private static StartPlaybackContextHandler StartContextHandler(
+        FakeConnectStateStore store) =>
+        new(store, new ConnectStateCoordinator());
+
+    private static StartPlaybackContextCommand ContextCommand(
+        Guid sourceId,
+        QueueState queue) =>
+        new(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            sourceId,
+            PlaybackSourceType.Playlist,
+            queue.Items.Select(item => new PlaybackContextItem(
+                    item.QueueItemId,
+                    item.TrackId))
+                .ToArray(),
+            null,
+            TestStates.Time);
 
     private static QueueState QueueWithItems(int count)
     {

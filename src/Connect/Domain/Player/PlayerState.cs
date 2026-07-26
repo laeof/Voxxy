@@ -54,6 +54,17 @@ public sealed class PlayerState
         return true;
     }
 
+    public bool PlayFrom(long positionMs, DateTimeOffset serverTime)
+    {
+        ValidatePosition(positionMs);
+
+        IsPlaying = true;
+        PositionMs = positionMs;
+        PositionUpdatedAt = serverTime;
+        IncrementVersion();
+        return true;
+    }
+
     public bool Pause(DateTimeOffset serverTime)
     {
         if (!IsPlaying)

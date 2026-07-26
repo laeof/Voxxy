@@ -18,10 +18,8 @@ public sealed class ConnectStateCoordinator
         ArgumentNullException.ThrowIfNull(player);
 
         bool selected = queue.Select(queueItemId);
-        if (selected)
-        {
-            player.ResetPosition(serverTime);
-        }
+        player.ResetPosition(serverTime);
+        player.Play(serverTime);
 
         return selected;
     }
@@ -92,6 +90,41 @@ public sealed class ConnectStateCoordinator
         }
 
         return true;
+    }
+
+    public void StartPlaybackContext(
+        QueueState queue,
+        PlayerState player,
+        PlaybackSourceType sourceType,
+        Guid sourceId,
+        IReadOnlyCollection<QueueItem> items,
+        int? startIndex,
+        DateTimeOffset serverTime)
+    {
+        ArgumentNullException.ThrowIfNull(queue);
+        ArgumentNullException.ThrowIfNull(player);
+        ArgumentNullException.ThrowIfNull(items);
+
+        int selectedIndex = startIndex ?? 0;
+        if (!queue.IsContext(sourceType, sourceId))
+        {
+            queue.ReplaceContext(sourceType, sourceId, items, selectedIndex);
+            player.PlayFrom(0, serverTime);
+            return;
+        }
+
+        if (startIndex is int explicitIndex)
+        {
+            if (explicitIndex < 0 || explicitIndex >= queue.Items.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startIndex));
+            }
+            queue.Select(queue.Items[explicitIndex].QueueItemId);
+            player.PlayFrom(0, serverTime);
+            return;
+        }
+
+        player.Play(serverTime);
     }
 
     public QueueNavigationResult Previous(

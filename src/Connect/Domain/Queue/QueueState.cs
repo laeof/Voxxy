@@ -9,6 +9,8 @@ public sealed class QueueState
     public Guid? CurrentQueueItemId { get; private set; }
     public RepeatMode RepeatMode { get; private set; }
     public bool IsShuffled { get; private set; }
+    public Guid? SourceId { get; private set; }
+    public PlaybackSourceType? SourceType { get; private set; }
     public long Version { get; private set; }
     public QueueItem? CurrentItem =>
         CurrentQueueItemId is Guid currentId
@@ -16,7 +18,7 @@ public sealed class QueueState
             : null;
 
     public QueueState()
-        : this([], null, RepeatMode.None, false, 0)
+        : this([], null, RepeatMode.None, false, 0, null, null)
     {
     }
 
@@ -25,10 +27,13 @@ public sealed class QueueState
         Guid? currentQueueItemId,
         RepeatMode repeatMode,
         bool isShuffled,
-        long version)
+        long version,
+        Guid? sourceId,
+        PlaybackSourceType? sourceType)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(version);
         ValidateRepeatMode(repeatMode);
+        ValidateSource(sourceId, sourceType);
 
         _items = [.. items];
         ValidateItems(_items);
@@ -44,6 +49,8 @@ public sealed class QueueState
         CurrentQueueItemId = currentQueueItemId;
         RepeatMode = repeatMode;
         IsShuffled = isShuffled;
+        SourceId = sourceId;
+        SourceType = sourceType;
         Version = version;
     }
 
@@ -52,8 +59,42 @@ public sealed class QueueState
         Guid? currentQueueItemId,
         RepeatMode repeatMode,
         bool isShuffled,
-        long version) =>
-        new(items, currentQueueItemId, repeatMode, isShuffled, version);
+        long version,
+        Guid? sourceId = null,
+        PlaybackSourceType? sourceType = null) =>
+        new(items, currentQueueItemId, repeatMode, isShuffled, version, sourceId, sourceType);
+
+    public bool IsContext(PlaybackSourceType sourceType, Guid sourceId) =>
+        SourceType == sourceType && SourceId == sourceId;
+
+    public bool ReplaceContext(
+        PlaybackSourceType sourceType,
+        Guid sourceId,
+        IReadOnlyCollection<QueueItem> items,
+        int startIndex)
+    {
+        ValidateSource(sourceId, sourceType);
+        ArgumentNullException.ThrowIfNull(items);
+        if (items.Count == 0)
+        {
+            throw new ArgumentException("Playback source cannot be empty.", nameof(items));
+        }
+        if (startIndex < 0 || startIndex >= items.Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(startIndex));
+        }
+
+        var replacement = items.ToList();
+        ValidateItems(replacement);
+        _items.Clear();
+        _items.AddRange(replacement);
+        CurrentQueueItemId = replacement[startIndex].QueueItemId;
+        SourceId = sourceId;
+        SourceType = sourceType;
+        IsShuffled = false;
+        IncrementVersion();
+        return true;
+    }
 
     public QueueItem Add(Guid trackId) => Add(trackId, Guid.NewGuid());
 
@@ -92,6 +133,7 @@ public sealed class QueueState
         var item = new QueueItem(queueItemId, trackId, canonicalOrder);
 
         _items.Add(item);
+        ClearContext();
         IncrementVersion();
         return item;
     }
@@ -125,6 +167,7 @@ public sealed class QueueState
         bool removedCurrentItem = CurrentQueueItemId == queueItemId;
 
         _items.RemoveAt(index);
+        ClearContext();
 
         if (removedCurrentItem)
         {
@@ -158,6 +201,7 @@ public sealed class QueueState
         QueueItem item = _items[oldIndex];
         _items.RemoveAt(oldIndex);
         _items.Insert(newIndex, item);
+        ClearContext();
 
         if (!IsShuffled)
         {
@@ -331,6 +375,23 @@ public sealed class QueueState
         }
     }
 
+    private static void ValidateSource(Guid? sourceId, PlaybackSourceType? sourceType)
+    {
+        if (sourceId.HasValue != sourceType.HasValue)
+        {
+            throw new ArgumentException(
+                "Playback source ID and type must either both be set or both be null.");
+        }
+        if (sourceId == Guid.Empty)
+        {
+            throw new ArgumentException("Playback source ID is required.", nameof(sourceId));
+        }
+        if (sourceType is not null && !Enum.IsDefined(sourceType.Value))
+        {
+            throw new ArgumentOutOfRangeException(nameof(sourceType));
+        }
+    }
+
     private void ValidatePermutation(IReadOnlyCollection<Guid> orderedQueueItemIds)
     {
         if (orderedQueueItemIds.Count != _items.Count ||
@@ -360,6 +421,12 @@ public sealed class QueueState
             QueueItem item = _items[index];
             _items[index] = item with { CanonicalOrder = index };
         }
+    }
+
+    private void ClearContext()
+    {
+        SourceId = null;
+        SourceType = null;
     }
 
     private void IncrementVersion() => Version++;

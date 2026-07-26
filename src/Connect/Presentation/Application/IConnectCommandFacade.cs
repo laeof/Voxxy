@@ -56,6 +56,9 @@ public interface IConnectCommandFacade
     Task<ConnectApplicationResult> CompleteCurrentTrackAsync(
         CompleteCurrentTrackCommand command,
         CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> StartPlaybackContextAsync(
+        StartPlaybackContextCommand command,
+        CancellationToken cancellationToken);
     Task<ConnectApplicationResult> PreviousQueueItemAsync(
         PreviousQueueItemCommand command,
         CancellationToken cancellationToken);

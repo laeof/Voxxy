@@ -22,6 +22,7 @@ public sealed class ConnectCommandFacade(
     IChangeRepeatModeHandler changeRepeatMode,
     INextQueueItemHandler nextQueueItem,
     ICompleteCurrentTrackHandler completeCurrentTrack,
+    IStartPlaybackContextHandler startPlaybackContext,
     IPreviousQueueItemHandler previousQueueItem,
     IConnectSnapshotReader snapshotReader)
     : IConnectCommandFacade
@@ -110,6 +111,11 @@ public sealed class ConnectCommandFacade(
         CompleteCurrentTrackCommand command,
         CancellationToken cancellationToken) =>
         completeCurrentTrack.HandleAsync(command, cancellationToken);
+
+    public Task<ConnectApplicationResult> StartPlaybackContextAsync(
+        StartPlaybackContextCommand command,
+        CancellationToken cancellationToken) =>
+        startPlaybackContext.HandleAsync(command, cancellationToken);
 
     public Task<ConnectApplicationResult> PreviousQueueItemAsync(
         PreviousQueueItemCommand command,

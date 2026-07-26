@@ -98,6 +98,11 @@ internal sealed class TestConnectCommandFacade : IConnectCommandFacade
         CancellationToken cancellationToken) =>
         Execute(command, cancellationToken);
 
+    public Task<ConnectApplicationResult> StartPlaybackContextAsync(
+        StartPlaybackContextCommand command,
+        CancellationToken cancellationToken) =>
+        Execute(command, cancellationToken);
+
     public Task<ConnectApplicationResult> PreviousQueueItemAsync(
         PreviousQueueItemCommand command,
         CancellationToken cancellationToken) =>

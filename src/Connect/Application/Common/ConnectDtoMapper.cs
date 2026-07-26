@@ -26,7 +26,11 @@ internal static class ConnectDtoMapper
             state.CurrentQueueItemId,
             (RepeatModeDto)state.RepeatMode,
             state.IsShuffled,
-            state.Version);
+            state.Version,
+            state.SourceId,
+            state.SourceType is null
+                ? null
+                : (PlaybackSourceTypeDto)state.SourceType);
 
     public static PresenceStateDto ToDto(PresenceState state) =>
         new(

@@ -1,6 +1,7 @@
 using Connect.Application.Commands;
 using Connect.Application.Results;
 using Connect.Contracts.States;
+using Connect.Domain.Queue;
 using Connect.Presentation.Hubs;
 using Connect.Presentation.Transport;
 using Connect.Presentation.UnitTests.Fakes;
@@ -303,6 +304,33 @@ public sealed class PlayerHubTests
             facade.LastCommand.ShouldBeOfType<CompleteCurrentTrackCommand>();
         command.ExpectedQueueItemId.ShouldBe(queueItemId);
         command.CompletedPositionMs.ShouldBe(180_000);
+    }
+
+    [Fact]
+    public async Task StartPlaybackContext_Applied_BroadcastsCoordinatedResult()
+    {
+        (PlayerHub hub, TestConnectCommandFacade facade, TestBroadcaster broadcaster, _) =
+            CreateHub();
+        facade.Result = CoordinatedPlayerQueueResult();
+        var sourceId = Guid.NewGuid();
+        var queueItemId = Guid.NewGuid();
+        var trackId = Guid.NewGuid();
+
+        await hub.StartPlaybackContext(
+            new StartPlaybackContextRequest(
+                Guid.NewGuid(),
+                sourceId,
+                PlaybackSourceTypeContract.Album,
+                [new PlaybackContextItemRequest(queueItemId, trackId)],
+                0));
+
+        broadcaster.Calls.ShouldBe(1);
+        StartPlaybackContextCommand command =
+            facade.LastCommand.ShouldBeOfType<StartPlaybackContextCommand>();
+        command.SourceId.ShouldBe(sourceId);
+        command.SourceType.ShouldBe(PlaybackSourceType.Album);
+        command.Items.Single().QueueItemId.ShouldBe(queueItemId);
+        command.StartIndex.ShouldBe(0);
     }
 
     [Fact]
