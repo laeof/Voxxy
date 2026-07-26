@@ -4,6 +4,7 @@ using Connect.Application.DeviceLifecycle;
 using Connect.Application.Results;
 using Connect.Application.UnitTests.Fakes;
 using Connect.Domain.Player;
+using Connect.Domain.Presence;
 
 namespace Connect.Application.UnitTests.DeviceLifecycle;
 
@@ -52,13 +53,27 @@ public sealed class SelectActiveDeviceHandlerTests
         store.CommitPlayerPresenceCalls.ShouldBe(0);
     }
 
-    private static FakeConnectStateStore Store(Guid deviceId) =>
-        new()
+    private static FakeConnectStateStore Store(Guid deviceId)
+    {
+        var presence = new PresenceState();
+        presence.RegisterConnection(
+            Guid.NewGuid(),
+            "Initially active",
+            "connection-other",
+            TestStates.Time);
+        presence.RegisterConnection(
+            deviceId,
+            "Selected device",
+            "connection-a",
+            TestStates.Time.AddSeconds(1));
+
+        return new FakeConnectStateStore
         {
             ReadSnapshot = (_, _) => TestResults.Snapshot(
                 new PlayerState(TestStates.Time),
-                TestStates.Presence(deviceId, "connection-a"))
+                presence)
         };
+    }
 
     private static SelectActiveDeviceHandler Handler(FakeConnectStateStore store) => new(store);
 

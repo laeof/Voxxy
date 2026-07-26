@@ -87,6 +87,26 @@ public sealed class PlayerHubTests
     }
 
     [Fact]
+    public async Task OnDisconnected_RemovesAuthoritativeConnectionAndBroadcastsTransition()
+    {
+        (PlayerHub hub, TestConnectCommandFacade facade, TestBroadcaster broadcaster, _) =
+            CreateHub();
+        facade.Result = new ConnectApplicationResult(
+            ConnectCommandStatus.Applied,
+            Player: Player(2),
+            Presence: Presence(3));
+
+        await hub.OnDisconnectedAsync(null);
+
+        DisconnectConnectionCommand command =
+            facade.LastCommand.ShouldBeOfType<DisconnectConnectionCommand>();
+        command.UserId.ShouldBe(UserId);
+        command.ConnectionId.ShouldBe("server-connection");
+        command.ServerTime.ShouldBe(Now);
+        broadcaster.Calls.ShouldBe(1);
+    }
+
+    [Fact]
     public async Task Command_UsesInjectedTimeProviderForServerTimeAndRateLimit()
     {
         (PlayerHub hub, TestConnectCommandFacade facade, _, TestTimeProvider clock) =

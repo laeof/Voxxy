@@ -92,7 +92,13 @@ public sealed class PresenceState
 
         changed |= device.RegisterConnection(connectionId, connectedAt);
 
-        if (ActiveDeviceId == deviceId)
+        if (ActiveDeviceId is null)
+        {
+            ActiveDeviceId = deviceId;
+            AudioOwnerConnectionId = connectionId;
+            changed = true;
+        }
+        else if (ActiveDeviceId == deviceId)
         {
             changed |= EnsureAudioOwner();
         }
@@ -105,7 +111,9 @@ public sealed class PresenceState
         return changed;
     }
 
-    public SelectActiveDeviceResult SelectActiveDevice(Guid deviceId)
+    public SelectActiveDeviceResult SelectActiveDevice(
+        Guid deviceId,
+        string? preferredConnectionId = null)
     {
         Device? device = FindDevice(deviceId);
         if (device is null)
@@ -124,7 +132,10 @@ public sealed class PresenceState
                 AudioOwnerConnectionId);
         }
 
-        string owner = SelectAudioOwner(device);
+        string owner =
+            preferredConnectionId is not null && device.HasConnection(preferredConnectionId)
+                ? preferredConnectionId
+                : SelectAudioOwner(device);
         if (ActiveDeviceId == deviceId && AudioOwnerConnectionId == owner)
         {
             return new SelectActiveDeviceResult(

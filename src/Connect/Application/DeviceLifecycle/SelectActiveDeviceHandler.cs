@@ -44,7 +44,7 @@ public sealed class SelectActiveDeviceHandler(IConnectStateStore store)
 
             cancellationToken.ThrowIfCancellationRequested();
             SelectActiveDeviceResult domainResult =
-                presence.SelectActiveDevice(command.DeviceId);
+                presence.SelectActiveDevice(command.DeviceId, command.ConnectionId);
             var outcome = new ConnectCommandOutcome(
                 command.DeviceId,
                 command.ConnectionId,

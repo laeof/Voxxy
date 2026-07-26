@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Connect.Presentation.Application;
 using Connect.Presentation.Backplane;
 using Connect.Presentation.Broadcasting;
@@ -36,7 +37,11 @@ public static class DependencyInjection
         };
         transportOptions.Validate();
 
-        ISignalRServerBuilder signalR = services.AddSignalR();
+        ISignalRServerBuilder signalR = services
+            .AddSignalR()
+            .AddJsonProtocol(options =>
+                options.PayloadSerializerOptions.Converters.Add(
+                    new JsonStringEnumConverter()));
         services.Configure<HubOptions<PlayerHub>>(
             options =>
                 options.MaximumReceiveMessageSize = transportOptions.MaximumReceiveMessageSize);

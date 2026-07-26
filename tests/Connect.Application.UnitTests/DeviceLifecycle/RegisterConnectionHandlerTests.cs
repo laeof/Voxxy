@@ -33,6 +33,8 @@ public sealed class RegisterConnectionHandlerTests
         captured.ShouldNotBeNull();
         captured.RegisteredConnectionId.ShouldBe("connection-a");
         captured.State.Devices.Single().DeviceId.ShouldBe(DeviceId);
+        captured.State.ActiveDeviceId.ShouldBe(DeviceId);
+        captured.State.AudioOwnerConnectionId.ShouldBe("connection-a");
         store.CommitPresenceCalls.ShouldBe(1);
     }
 

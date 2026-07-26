@@ -42,6 +42,33 @@ public sealed class PlayerHub(
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         rateLimiter.RemoveConnection(Context.ConnectionId);
+        try
+        {
+            Guid userId = GetUserId();
+            var commandId = Guid.NewGuid();
+            ConnectApplicationResult result = await facade.DisconnectAsync(
+                new DisconnectConnectionCommand(
+                    userId,
+                    commandId,
+                    Context.ConnectionId,
+                    timeProvider.GetUtcNow()),
+                CancellationToken.None);
+            if (result.Status == ConnectCommandStatus.Applied)
+            {
+                await broadcaster.BroadcastAsync(
+                    userId,
+                    commandId,
+                    result,
+                    CancellationToken.None);
+            }
+        }
+        catch (Exception disconnectException)
+        {
+            logger.LogWarning(
+                disconnectException,
+                "Connect disconnect cleanup failed for connection {ConnectionId}. Lease cleanup will retry.",
+                Context.ConnectionId);
+        }
         if (Context.Items.Remove(ConnectionMetricsRecordedKey))
         {
             metrics.CurrentConnections.Add(-1);

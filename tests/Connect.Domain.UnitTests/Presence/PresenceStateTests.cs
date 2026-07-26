@@ -21,7 +21,25 @@ public sealed class PresenceStateTests
         device.DeviceId.ShouldBe(deviceId);
         device.IsOnline.ShouldBeTrue();
         device.Connections.ShouldHaveSingleItem().ConnectionId.ShouldBe("connection-1");
+        presence.ActiveDeviceId.ShouldBe(deviceId);
+        presence.AudioOwnerConnectionId.ShouldBe("connection-1");
         presence.Version.ShouldBe(1);
+    }
+
+    [Fact]
+    public void RegisterConnection_SecondDevice_DoesNotTakeOwnershipFromActiveDevice()
+    {
+        PresenceState presence = PresenceWithConnection(out Guid activeDeviceId);
+        var secondDeviceId = Guid.NewGuid();
+
+        presence.RegisterConnection(
+            secondDeviceId,
+            "Second browser",
+            "connection-2",
+            Start.AddSeconds(1));
+
+        presence.ActiveDeviceId.ShouldBe(activeDeviceId);
+        presence.AudioOwnerConnectionId.ShouldBe("connection-1");
     }
 
     [Fact]
@@ -163,14 +181,39 @@ public sealed class PresenceStateTests
     }
 
     [Fact]
-    public void SelectActiveDevice_SelectsOwnedOnlineDevice()
+    public void SelectActiveDevice_FirstRegisteredDeviceIsAlreadySelected()
     {
         PresenceState presence = PresenceWithConnection(out Guid deviceId);
 
         SelectActiveDeviceResult result = presence.SelectActiveDevice(deviceId);
 
+        result.Status.ShouldBe(SelectActiveDeviceStatus.NoOp);
+        result.ActiveDeviceId.ShouldBe(deviceId);
+        result.AudioOwnerConnectionId.ShouldBe("connection-1");
+    }
+
+    [Fact]
+    public void SelectActiveDevice_PrefersCallingConnectionOnSelectedDevice()
+    {
+        PresenceState presence = PresenceWithTwoConnections(out Guid deviceId);
+
+        SelectActiveDeviceResult result =
+            presence.SelectActiveDevice(deviceId, "connection-2");
+
         result.Status.ShouldBe(SelectActiveDeviceStatus.Selected);
         result.ActiveDeviceId.ShouldBe(deviceId);
+        result.AudioOwnerConnectionId.ShouldBe("connection-2");
+        presence.AudioOwnerConnectionId.ShouldBe("connection-2");
+    }
+
+    [Fact]
+    public void SelectActiveDevice_IgnoresPreferredConnectionOwnedByAnotherDevice()
+    {
+        PresenceState presence = PresenceWithTwoConnections(out Guid deviceId);
+
+        SelectActiveDeviceResult result =
+            presence.SelectActiveDevice(deviceId, "foreign-connection");
+
         result.AudioOwnerConnectionId.ShouldBe("connection-1");
     }
 

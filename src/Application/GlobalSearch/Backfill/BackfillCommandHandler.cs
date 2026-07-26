@@ -1,17 +1,20 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Media;
 using Application.Abstractions.Messaging;
-using Application.GlobalSearch.Backfill;
 using Application.MeiliSearch;
 using Microsoft.EntityFrameworkCore;
-using SharedKernel.GlobalSearch;
+using SharedKernel;
 using SharedKernel.Constants;
 using SharedKernel.Enums;
-using SharedKernel;
+using SharedKernel.GlobalSearch;
 
-namespace Infrastructure.MeiliSearch.BackFill;
+namespace Application.GlobalSearch.Backfill;
 
-internal sealed class BackFillCommandHandler(ISearchIndexer searchIndexer, IApplicationDbContext context, IMediaUrlResolver mediaUrlResolver) : ICommandHandler<BackfillCommand>
+internal sealed class BackfillCommandHandler(
+    ISearchIndexer searchIndexer,
+    IApplicationDbContext context,
+    IMediaUrlResolver mediaUrlResolver)
+    : ICommandHandler<BackfillCommand>
 {
     public async Task<Result> Handle(BackfillCommand request, CancellationToken cancellationToken)
     {

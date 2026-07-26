@@ -138,13 +138,18 @@ public sealed class PlayerCommandHandlerTests
     [Fact]
     public async Task ChangeVolume_CommitsPlayer()
     {
-        FakeConnectStateStore store = PlayerStore(new PlayerState(TestStates.Time));
+        DateTimeOffset anchorTime = TestStates.Time.AddSeconds(-10);
+        var player = PlayerState.Restore(true, 12_000, anchorTime, 50, 4);
+        FakeConnectStateStore store = PlayerStore(player);
         store.CommitPlayer = _ => TestResults.Commit(PersistenceStatus.Applied);
 
         ConnectApplicationResult result = await new ChangeVolumeHandler(store).HandleAsync(
             new ChangeVolumeCommand(Guid.NewGuid(), Guid.NewGuid(), 80, TestStates.Time));
 
         result.Player!.VolumePercent.ShouldBe(80);
+        result.Player.PositionMs.ShouldBe(12_000);
+        result.Player.PositionUpdatedAt.ShouldBe(anchorTime);
+        result.Player.IsPlaying.ShouldBeTrue();
     }
 
     [Fact]
@@ -168,7 +173,8 @@ public sealed class PlayerCommandHandlerTests
     public async Task ChangeVolume_OnConflict_UsesFreshState()
     {
         PlayerState first = new(TestStates.Time);
-        var second = PlayerState.Restore(false, 0, TestStates.Time, 30, 4);
+        DateTimeOffset freshAnchorTime = TestStates.Time.AddSeconds(2);
+        var second = PlayerState.Restore(true, 42_000, freshAnchorTime, 30, 4);
         PlayerState[] states = [first, second];
         var store = new FakeConnectStateStore();
         store.ReadPlayer = (_, _) => TestResults.Player(states[store.ReadPlayerCalls - 1]);
@@ -181,6 +187,9 @@ public sealed class PlayerCommandHandlerTests
             new ChangeVolumeCommand(Guid.NewGuid(), Guid.NewGuid(), 80, TestStates.Time));
 
         result.Player!.Version.ShouldBe(5);
+        result.Player.PositionMs.ShouldBe(42_000);
+        result.Player.PositionUpdatedAt.ShouldBe(freshAnchorTime);
+        result.Player.IsPlaying.ShouldBeTrue();
         store.ReadPlayerCalls.ShouldBe(2);
     }
 
