@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Connect\Application\Application.csproj" />
     <ProjectReference Include="..\..\src\Web.Api\Web.Api.csproj" />
   </ItemGroup>
 

@@ -1,0 +1,69 @@
+using Connect.Application.Commands;
+using Connect.Application.Results;
+
+namespace Connect.Presentation.Application;
+
+public interface IConnectCommandFacade
+{
+    Task<ConnectApplicationResult> RegisterAsync(
+        RegisterConnectionCommand command,
+        CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> HeartbeatAsync(
+        RefreshConnectionLeaseCommand command,
+        CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> DisconnectAsync(
+        DisconnectConnectionCommand command,
+        CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> SelectDeviceAsync(
+        SelectActiveDeviceCommand command,
+        CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> PlayAsync(
+        PlayCommand command,
+        CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> PauseAsync(
+        PauseCommand command,
+        CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> ChangePositionAsync(
+        ChangePositionCommand command,
+        CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> ChangeVolumeAsync(
+        ChangeVolumeCommand command,
+        CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> AddQueueItemAsync(
+        AddQueueItemCommand command,
+        CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> RemoveQueueItemAsync(
+        RemoveQueueItemCommand command,
+        CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> MoveQueueItemAsync(
+        MoveQueueItemCommand command,
+        CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> SelectQueueItemAsync(
+        SelectQueueItemCommand command,
+        CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> ShuffleQueueAsync(
+        ShuffleQueueCommand command,
+        CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> UnshuffleQueueAsync(
+        UnshuffleQueueCommand command,
+        CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> ChangeRepeatModeAsync(
+        ChangeRepeatModeCommand command,
+        CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> NextQueueItemAsync(
+        NextQueueItemCommand command,
+        CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> CompleteCurrentTrackAsync(
+        CompleteCurrentTrackCommand command,
+        CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> StartPlaybackContextAsync(
+        StartPlaybackContextCommand command,
+        CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> PreviousQueueItemAsync(
+        PreviousQueueItemCommand command,
+        CancellationToken cancellationToken);
+    Task<ConnectApplicationResult> GetSnapshotAsync(
+        Guid userId,
+        DateTimeOffset serverTime,
+        CancellationToken cancellationToken);
+}

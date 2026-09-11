@@ -4,7 +4,7 @@ using Application.Abstractions.Media;
 using Application.Abstractions.Messaging;
 using Application.Albums.GetById;
 using Application.Artists.GetById;
-using Application.Tracks.GetById;
+using Application.Tracks.Batch;
 using Application.Users.GetByEmail;
 using Domain.Playlists;
 using Microsoft.EntityFrameworkCore;
@@ -36,7 +36,10 @@ internal sealed class GetPlaylistByIdQueryHandler(IApplicationDbContext context,
                     ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Users, playlist.CreatedByUser.ImageKey).ToString()
                 },
                 PlaylistType = (PlaylistType)playlist.Type,
-                Tracks = playlist.Tracks.Select(track => new TrackResponse
+                Tracks = playlist.Tracks
+                    .OrderBy(track => track.CreatedAt)
+                    .ThenBy(track => track.Id)
+                    .Select(track => new TrackResponse
                 {
                     Id = track.Id,
                     Name = track.Name,

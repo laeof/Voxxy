@@ -1,0 +1,85 @@
+services:
+  proxy:
+    image: nginx:1.27-alpine
+    ports:
+      - "8088:8080"
+    volumes:
+      - ./tools/Connect.LoadRunner/nginx.connect-load.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend-1
+      - backend-2
+
+  backend-1: &backend
+    build:
+      context: .
+      dockerfile: src/Web.Api/Dockerfile
+    environment: &backend-environment
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: 8080
+      ConnectionStrings__Database: Host=postgres;Database=voxxy_db;Username=postgres;Password=postgres
+      ConnectionStrings__Redis: redis:6379
+      ConnectionStrings__AzureStorage: UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://azurite
+      ConnectionStrings__MeiliSearchUrl: http://meilisearch:7700
+      ConnectionStrings__MeiliSearchApiKey: local_master_key
+      SignalR__Backplane__Enabled: "true"
+      SignalR__Backplane__ChannelPrefix: voxxy:signalr:load
+      Cors__AllowedOrigins__0: http://localhost:8088
+    depends_on:
+      - postgres
+      - redis
+      - meilisearch
+      - azurite
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 1G
+
+  backend-2:
+    <<: *backend
+    environment:
+      <<: *backend-environment
+
+  redis:
+    image: redis:7.2-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: voxxy_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    environment:
+      MEILI_MASTER_KEY: local_master_key
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.35.0
+
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.12.0
+    ports:
+      - "8474:8474"
+
+  load-generator:
+    profiles: ["load"]
+    build:
+      context: .
+      dockerfile: tools/Connect.LoadRunner/Dockerfile
+    volumes:
+      - ./connect-load-tokens.json:/app/connect-load-tokens.json:ro
+      - ./artifacts/connect-load:/app/artifacts/connect-load
+    command:
+      - --profile=ci
+      - --url=http://proxy:8080/api/hubs/connect
+      - --tokens=/app/connect-load-tokens.json
+    depends_on:
+      - proxy

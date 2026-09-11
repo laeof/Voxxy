@@ -2,7 +2,7 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Media;
 using Application.Abstractions.Messaging;
 using Application.Artists.GetById;
-using Application.Tracks.GetById;
+using Application.Tracks.Batch;
 using Application.Users.GetByEmail;
 using Domain.ArtistReleases.Constants;
 using Domain.ArtistReleases.Enums;
@@ -35,6 +35,7 @@ internal sealed class GetAlbumByIdQueryHandler(IApplicationDbContext context, IM
                 }).ToList(),
                 Tracks = album.Tracks
                     .OrderBy(track => track.AlbumOrder)
+                    .ThenBy(track => track.Id)
                     .Select(track => new TrackResponse
                     {
                         Id = track.Id,
@@ -42,6 +43,7 @@ internal sealed class GetAlbumByIdQueryHandler(IApplicationDbContext context, IM
                         ImageUrl = mediaUrlResolver.GetPublicUrl(AzureContainerNames.Albums, album.ImageKey).ToString(),
                         Name = track.Name,
                         Duration = track.Duration,
+                        AlbumOrder = track.AlbumOrder,
                         Artists = album.Artists.Select(artist => new ArtistResponse
                         {
                             Id = artist.Id,

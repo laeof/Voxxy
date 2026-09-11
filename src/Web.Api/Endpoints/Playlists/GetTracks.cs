@@ -1,6 +1,6 @@
 using Application.Abstractions.Messaging;
 using Application.Playlists.GetTracks;
-using Application.Tracks.GetById;
+using Application.Tracks.Batch;
 using SharedKernel;
 using Web.Api.Extensions;
 using Web.Api.Infrastructure;

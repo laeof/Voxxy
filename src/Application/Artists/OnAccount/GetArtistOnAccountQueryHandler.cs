@@ -3,7 +3,7 @@ using Application.Abstractions.Media;
 using Application.Abstractions.Messaging;
 using Application.Albums.GetById;
 using Application.Artists.GetById;
-using Application.Tracks.GetById;
+using Application.Tracks.Batch;
 using Domain.Artists;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;

@@ -1,4 +1,5 @@
-﻿using Web.Api.Factories;
+﻿using Connect.Presentation;
+using Web.Api.Factories;
 using Web.Api.Infrastructure;
 
 namespace Web.Api;
@@ -16,5 +17,19 @@ public static class DependencyInjection
         services.AddSingleton<CookieOptionsFactory>();
 
         return services;
+    }
+
+    public static IServiceCollection AddApplicationModules(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddConnectModule(configuration);
+
+        return services;
+    }
+
+    public static IEndpointRouteBuilder MapApplicationModules(this IEndpointRouteBuilder app)
+    {
+        app.MapConnectModule();
+
+        return app;
     }
 }

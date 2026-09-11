@@ -12,6 +12,7 @@ using Infrastructure.Time;
 using Meilisearch;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -113,6 +114,7 @@ public static class DependencyInjection
                     OnMessageReceived = context =>
                     {
                         context.Token = context.Request.Cookies["access_token"];
+
                         return Task.CompletedTask;
                     }
                 };

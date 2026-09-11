@@ -1,5 +1,5 @@
 using Application.Abstractions.Messaging;
-using Application.Tracks.GetById;
+using Application.Tracks.Batch;
 
 namespace Application.Artists.Upload;
 

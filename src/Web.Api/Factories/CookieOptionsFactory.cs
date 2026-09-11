@@ -13,7 +13,7 @@ internal sealed class CookieOptionsFactory
     public CookieOptions AccessToken() => new()
     {
         HttpOnly = true,
-        Secure = true,
+        Secure = false,
         SameSite = SameSiteMode.Strict,
         Path = "/",
         Expires = DateTime.UtcNow.AddMinutes(_configuration.GetValue<int>("Jwt:ExpirationInMinutes"))
@@ -22,7 +22,7 @@ internal sealed class CookieOptionsFactory
     public CookieOptions RefreshToken() => new()
     {
         HttpOnly = true,
-        Secure = true,
+        Secure = false,
         SameSite = SameSiteMode.Strict,
         Path = "/",
         Expires = DateTimeOffset.UtcNow.AddDays(_configuration.GetValue<int>("Jwt:ExpirationInDays"))
@@ -31,7 +31,7 @@ internal sealed class CookieOptionsFactory
     public CookieOptions XsrfToken() => new()
     {
         HttpOnly = false,
-        Secure = true,
+        Secure = false,
         SameSite = SameSiteMode.Lax,
         Path = "/",
     };

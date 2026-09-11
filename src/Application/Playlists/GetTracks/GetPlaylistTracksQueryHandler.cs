@@ -4,7 +4,7 @@ using Application.Abstractions.Media;
 using Application.Abstractions.Messaging;
 using Application.Albums.GetById;
 using Application.Artists.GetById;
-using Application.Tracks.GetById;
+using Application.Tracks.Batch;
 using Application.Users.GetByEmail;
 using Domain.Playlists;
 using Domain.Tracks;
@@ -23,6 +23,8 @@ internal sealed class GetPlaylistTracksQueryHandler(IApplicationDbContext contex
         List<TrackResponse>? tracks = await context.Playlists
             .Where(playlist => playlist.Id == query.PlaylistId)
             .SelectMany(playlist => playlist.Tracks)
+            .OrderBy(track => track.CreatedAt)
+            .ThenBy(track => track.Id)
             .Select(track => new TrackResponse
             {
                 Id = track.Id,

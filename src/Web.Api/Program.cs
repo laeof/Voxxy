@@ -24,14 +24,19 @@ builder.Services
     .AddPresentation(builder.Configuration)
     .AddInfrastructure(builder.Configuration);
 
+builder.Services.AddApplicationModules(builder.Configuration);
+
 builder.Services.AddEndpoints(Assembly.GetExecutingAssembly());
+builder.Services.AddHealthChecks().AddCheck(
+    "self",
+    () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy(),
+    tags: ["live"]);
 
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(
         policy => policy
             .WithOrigins(
-                "http://localhost:4200",
-                "http://192.168.1.235:4200"
+                builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()!
             )
             .AllowAnyHeader()
             .AllowAnyMethod()
@@ -52,6 +57,8 @@ WebApplication app = builder.Build();
 
 app.MapEndpoints();
 
+app.MapApplicationModules();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwaggerWithUi();
@@ -63,6 +70,16 @@ await app.InitializePermissionsAsync();
 
 app.MapHealthChecks("health", new HealthCheckOptions
 {
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+app.MapHealthChecks("health/live", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("live"),
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+app.MapHealthChecks("health/ready", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("ready"),
     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
 });
 
