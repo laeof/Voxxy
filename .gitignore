@@ -400,4 +400,3 @@ FodyWeavers.xsd
 .containers/
 
 .DS_Store
-**/Migrations/*
