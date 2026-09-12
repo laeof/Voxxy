@@ -8,8 +8,6 @@ internal sealed class Logout : IEndpoint
     {
         app.MapPost("users/logout", (HttpContext httpContext, CookieOptionsFactory cookieOptionsFactory) =>
         {
-            httpContext.Response.Cookies.Delete("access_token", cookieOptionsFactory.AccessToken());
-            httpContext.Response.Cookies.Delete("refresh_token", cookieOptionsFactory.RefreshToken());
             httpContext.Response.Cookies.Delete("VOXXY-XSRF-TOKEN", cookieOptionsFactory.XsrfToken());
             httpContext.Response.Cookies.Delete("VOXXY-XSRF-COOKIE", cookieOptionsFactory.XsrfToken());
 

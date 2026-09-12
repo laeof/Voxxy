@@ -25,7 +25,7 @@ public static class ConnectModule
     {
         app.MapConnectEndpoints();
         app.MapHub<PlayerHub>(
-            "/api/hubs/connect",
+            "/api/v1/hubs/connect",
             options => options.Transports = HttpTransportType.WebSockets);
 
         return app;
