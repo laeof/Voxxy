@@ -10,29 +10,12 @@ internal sealed class CookieOptionsFactory
         _configuration = configuration;
     }
 
-    public CookieOptions AccessToken() => new()
-    {
-        HttpOnly = true,
-        Secure = false,
-        SameSite = SameSiteMode.Strict,
-        Path = "/",
-        Expires = DateTime.UtcNow.AddMinutes(_configuration.GetValue<int>("Jwt:ExpirationInMinutes"))
-    };
-
-    public CookieOptions RefreshToken() => new()
-    {
-        HttpOnly = true,
-        Secure = false,
-        SameSite = SameSiteMode.Strict,
-        Path = "/",
-        Expires = DateTimeOffset.UtcNow.AddDays(_configuration.GetValue<int>("Jwt:ExpirationInDays"))
-    };
-
     public CookieOptions XsrfToken() => new()
     {
-        HttpOnly = false,
-        Secure = false,
+        HttpOnly = true,
+        Secure = true,
         SameSite = SameSiteMode.Lax,
         Path = "/",
+        Expires = DateTimeOffset.UtcNow.AddDays(_configuration.GetValue<int>("Jwt:ExpirationInDays"))
     };
 }

@@ -16,8 +16,6 @@ internal sealed class Login : IEndpoint
         app.MapPost("users/login", async (
             Request request,
             ICommandHandler<LoginUserCommand, LoginResponse> handler,
-            HttpContext httpContext,
-            CookieOptionsFactory cookieOptionsFactory,
             CancellationToken cancellationToken) =>
         {
             var command = new LoginUserCommand(request.Email, request.Password);
@@ -29,13 +27,7 @@ internal sealed class Login : IEndpoint
                 return CustomResults.Problem(result);
             }
 
-            return httpContext.OkWithAuthCookies(
-                result.Value.Me,
-                result.Value.AccessToken,
-                result.Value.RefreshToken,
-                cookieOptionsFactory.AccessToken(),
-                cookieOptionsFactory.RefreshToken()
-            );
+            return result.Match(Results.Ok, CustomResults.Problem);
         })
         .WithTags(Tags.Users);
     }

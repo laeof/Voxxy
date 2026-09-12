@@ -3,4 +3,4 @@ using Domain.Users;
 
 namespace Application.Users.Refresh;
 
-public sealed record RefreshTokenCommand(User user, string RefreshToken) : ICommand<RefreshTokenResponse>;
+public sealed record RefreshTokenCommand(string RefreshToken) : ICommand<RefreshTokenResponse>;

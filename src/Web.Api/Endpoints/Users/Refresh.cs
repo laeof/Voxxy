@@ -10,24 +10,23 @@ namespace Web.Api.Endpoints.Users;
 
 internal sealed class Refresh : IEndpoint
 {
-    public sealed record Request(User user);
+    public sealed record Request(string RefreshToken);
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
         app.MapPost("users/refresh", async (
-            Request requestrefreshToken,
+            Request requestRefreshToken,
             ICommandHandler<RefreshTokenCommand, RefreshTokenResponse> handler,
-            HttpContext httpContext,
             CookieOptionsFactory cookieOptionsFactory,
             CancellationToken cancellationToken) =>
         {
-            string? refreshToken = httpContext.Request.Cookies["refresh_token"];
+            string? refreshToken = requestRefreshToken.RefreshToken;
 
             if (string.IsNullOrEmpty(refreshToken))
             {
                 return Results.StatusCode(403);
             }
 
-            var command = new RefreshTokenCommand(requestrefreshToken.user, refreshToken);
+            var command = new RefreshTokenCommand(refreshToken);
 
             Result<RefreshTokenResponse> result = await handler.Handle(command, cancellationToken);
 
@@ -36,13 +35,7 @@ internal sealed class Refresh : IEndpoint
                 return Results.StatusCode(403);
             }
 
-            return httpContext.OkWithAuthCookies(
-                result.Value.Me,
-                result.Value.AccessToken,
-                result.Value.RefreshToken,
-                cookieOptionsFactory.AccessToken(),
-                cookieOptionsFactory.RefreshToken()
-            );
+            return result.Match(Results.Ok, CustomResults.Problem);
         }
         )
         .WithTags(Tags.Users);
