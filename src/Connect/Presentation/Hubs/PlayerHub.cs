@@ -17,7 +17,6 @@ public sealed class PlayerHub(
     IConnectCommandFacade facade,
     IConnectBroadcaster broadcaster,
     TimeProvider timeProvider,
-    ConnectTransportOptions transportOptions,
     ConnectInvocationRateLimiter rateLimiter,
     ConnectTransportMetrics metrics,
     ILogger<PlayerHub> logger)
@@ -27,7 +26,6 @@ public sealed class PlayerHub(
 
     public override async Task OnConnectedAsync()
     {
-        ValidateOrigin();
         Guid userId = GetUserId();
         await Groups.AddToGroupAsync(
             Context.ConnectionId,
@@ -90,7 +88,8 @@ public sealed class PlayerHub(
                     request.DeviceId,
                     request.DeviceName.Trim(),
                     Context.ConnectionId,
-                    serverTime),
+                    serverTime,
+                    request.RuntimeSessionId ?? Guid.NewGuid()),
                 cancellationToken));
 
     public async Task<ConnectCommandAck> RefreshConnectionLease()
@@ -537,15 +536,6 @@ public sealed class PlayerHub(
         }
 
         throw new HubException("connect_identity_invalid");
-    }
-
-    private void ValidateOrigin()
-    {
-        string origin = Context.GetHttpContext()?.Request.Headers.Origin.ToString() ?? string.Empty;
-        if (origin.Length > 0 && !transportOptions.AllowedOrigins.Contains(origin))
-        {
-            throw new HubException("connect_origin_not_allowed");
-        }
     }
 
     private void EnsureRateLimit(ConnectRateLimitBucket bucket, string commandType)

@@ -8,8 +8,7 @@ namespace Connect.Presentation.UnitTests.Fakes;
 
 internal sealed class TestHubCallerContext(
     string? userIdentifier,
-    string connectionId = "server-connection",
-    string? origin = null)
+    string connectionId = "server-connection")
     : HubCallerContext
 {
     private readonly CancellationToken _connectionAborted = CancellationToken.None;
@@ -24,21 +23,17 @@ internal sealed class TestHubCallerContext(
                 "test"));
     public override IDictionary<object, object?> Items { get; } =
         new Dictionary<object, object?>();
-    public override IFeatureCollection Features { get; } = CreateFeatures(origin);
+    public override IFeatureCollection Features { get; } = CreateFeatures();
     public override CancellationToken ConnectionAborted => _connectionAborted;
 
     public override void Abort()
     {
     }
 
-    private static FeatureCollection CreateFeatures(string? origin)
+    private static FeatureCollection CreateFeatures()
     {
         var features = new FeatureCollection();
         var context = new DefaultHttpContext();
-        if (origin is not null)
-        {
-            context.Request.Headers.Origin = origin;
-        }
         features.Set<IHttpContextFeature>(new TestHttpContextFeature(context));
         return features;
     }

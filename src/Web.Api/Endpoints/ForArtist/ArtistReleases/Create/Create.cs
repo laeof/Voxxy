@@ -34,6 +34,9 @@ internal sealed class Create : IEndpoint
             return result.Match(Results.Ok, CustomResults.Problem);
         })
         .WithTags(Tags.ForArtistReleases)
+        // Browser CSRF validation is owned by Voxxy.Bff before this bearer-only
+        // multipart request is proxied to the main API.
+        .DisableAntiforgery()
         .RequireAuthorization();
     }
 }

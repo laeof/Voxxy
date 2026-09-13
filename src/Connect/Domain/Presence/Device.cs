@@ -78,7 +78,8 @@ public sealed class Device
 
     internal bool RegisterConnection(
         string connectionId,
-        DateTimeOffset connectedAt)
+        DateTimeOffset connectedAt,
+        Guid runtimeSessionId = default)
     {
         ValidateConnectionId(connectionId);
 
@@ -91,9 +92,15 @@ public sealed class Device
             return false;
         }
 
-        _connections.Add(new DeviceConnection(connectionId, connectedAt));
+        _connections.Add(new DeviceConnection(connectionId, connectedAt, runtimeSessionId));
         return true;
     }
+
+    internal DeviceConnection? FindRuntimeSession(Guid runtimeSessionId) =>
+        runtimeSessionId == Guid.Empty
+            ? null
+            : _connections.FirstOrDefault(connection =>
+                connection.RuntimeSessionId == runtimeSessionId);
 
     internal bool RemoveConnection(string connectionId) =>
         _connections.RemoveAll(connection =>

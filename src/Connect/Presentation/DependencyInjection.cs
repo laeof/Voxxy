@@ -30,10 +30,7 @@ public static class DependencyInjection
             MaximumReceiveMessageSize =
                 configuration.GetValue<long?>(
                     $"{ConnectTransportOptions.SectionName}:MaximumReceiveMessageSize")
-                ?? ConnectTransportOptions.DefaultMaximumReceiveMessageSize,
-            AllowedOrigins = new HashSet<string>(
-                configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [],
-                StringComparer.OrdinalIgnoreCase)
+                ?? ConnectTransportOptions.DefaultMaximumReceiveMessageSize
         };
         transportOptions.Validate();
 

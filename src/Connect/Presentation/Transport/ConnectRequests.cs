@@ -20,7 +20,8 @@ public enum PlaybackSourceTypeContract
 public sealed record RegisterConnectionRequest(
     Guid CommandId,
     Guid DeviceId,
-    string DeviceName);
+    string DeviceName,
+    Guid? RuntimeSessionId = null);
 
 public sealed record CommandRequest(Guid CommandId);
 

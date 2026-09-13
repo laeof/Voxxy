@@ -6,8 +6,6 @@ public sealed class ConnectTransportOptions
     public const long DefaultMaximumReceiveMessageSize = 64 * 1024;
 
     public long MaximumReceiveMessageSize { get; init; } = DefaultMaximumReceiveMessageSize;
-    public IReadOnlySet<string> AllowedOrigins { get; init; } = new HashSet<string>();
-
     public void Validate()
     {
         if (MaximumReceiveMessageSize is < 1024 or > 64 * 1024)

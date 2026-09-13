@@ -58,6 +58,56 @@ public sealed class PresenceStateTests
     }
 
     [Fact]
+    public void RegisterConnection_SameRuntimeSession_ReplacesPreviousConnection()
+    {
+        var presence = new PresenceState();
+        var deviceId = Guid.NewGuid();
+        var runtimeSessionId = Guid.NewGuid();
+        presence.RegisterConnection(
+            deviceId,
+            "Browser",
+            "connection-old",
+            Start,
+            runtimeSessionId);
+
+        presence.RegisterConnection(
+            deviceId,
+            "Browser",
+            "connection-new",
+            Start.AddSeconds(1),
+            runtimeSessionId);
+
+        DeviceConnection connection = presence.Devices.ShouldHaveSingleItem()
+            .Connections.ShouldHaveSingleItem();
+        connection.ConnectionId.ShouldBe("connection-new");
+        connection.RuntimeSessionId.ShouldBe(runtimeSessionId);
+        presence.AudioOwnerConnectionId.ShouldBe("connection-new");
+    }
+
+    [Fact]
+    public void RegisterConnection_DifferentRuntimeSessions_RemainIndependent()
+    {
+        var presence = new PresenceState();
+        var deviceId = Guid.NewGuid();
+        presence.RegisterConnection(
+            deviceId,
+            "Browser",
+            "first-tab",
+            Start,
+            Guid.NewGuid());
+
+        presence.RegisterConnection(
+            deviceId,
+            "Browser",
+            "second-tab",
+            Start.AddSeconds(1),
+            Guid.NewGuid());
+
+        presence.Devices.ShouldHaveSingleItem().Connections.Count.ShouldBe(2);
+        presence.AudioOwnerConnectionId.ShouldBe("first-tab");
+    }
+
+    [Fact]
     public void RegisterConnection_RepeatedRegistrationIsIdempotent()
     {
         PresenceState presence = PresenceWithConnection(out Guid deviceId);

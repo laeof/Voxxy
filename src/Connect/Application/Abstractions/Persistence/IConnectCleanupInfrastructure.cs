@@ -1,5 +1,10 @@
 namespace Connect.Application.Abstractions.Persistence;
 
+public sealed class ConnectInfrastructureUnavailableException(
+    string message,
+    Exception? innerException = null)
+    : Exception(message, innerException);
+
 public interface IConnectSessionDiscovery
 {
     IAsyncEnumerable<Guid> GetCandidateUsersAsync(

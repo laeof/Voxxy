@@ -36,8 +36,7 @@ internal sealed class Refresh : IEndpoint
             }
 
             return result.Match(Results.Ok, CustomResults.Problem);
-        }
-        )
+        })
         .WithTags(Tags.Users);
     }
 }

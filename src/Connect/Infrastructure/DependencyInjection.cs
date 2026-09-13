@@ -36,7 +36,12 @@ public static class DependencyInjection
                 configuration.GetConnectionString("Redis")
                 ?? throw new InvalidOperationException("Redis connection string is missing");
 
-            return ConnectionMultiplexer.Connect(connectionString);
+            var options = ConfigurationOptions.Parse(connectionString);
+            // Connect is an optional feature. Redis being unavailable must not prevent the
+            // main API (catalog, streams and downloads) from starting and serving requests.
+            options.AbortOnConnectFail = false;
+            options.ReconnectRetryPolicy = new ExponentialRetry(2_000);
+            return ConnectionMultiplexer.Connect(options);
         });
 
         return services;

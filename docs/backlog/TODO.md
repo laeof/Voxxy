@@ -1,5 +1,9 @@
 ## Task-001 — Refactor Connect module synchronization
 
+### Deferred follow-ups
+
+- [Mobile Connect playback command ordering and reconciliation](mobile-connect-playback-command-ordering.md)
+
 ### Goal
 
 Refactor the existing Connect module so that playback state, active-device state, and queue state are synchronized consistently between all devices belonging to the same user.
