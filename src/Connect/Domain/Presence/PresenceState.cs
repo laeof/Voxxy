@@ -62,7 +62,8 @@ public sealed class PresenceState
         Guid deviceId,
         string deviceName,
         string connectionId,
-        DateTimeOffset connectedAt)
+        DateTimeOffset connectedAt,
+        Guid runtimeSessionId = default)
     {
         if (string.IsNullOrWhiteSpace(connectionId))
         {
@@ -90,7 +91,21 @@ public sealed class PresenceState
             changed = device.Rename(deviceName);
         }
 
-        changed |= device.RegisterConnection(connectionId, connectedAt);
+        DeviceConnection? previousRuntimeConnection = device.FindRuntimeSession(runtimeSessionId);
+        bool replacesAudioOwner = previousRuntimeConnection is not null &&
+            AudioOwnerConnectionId == previousRuntimeConnection.ConnectionId;
+        if (previousRuntimeConnection is not null &&
+            previousRuntimeConnection.ConnectionId != connectionId)
+        {
+            changed |= device.RemoveConnection(previousRuntimeConnection.ConnectionId);
+        }
+
+        changed |= device.RegisterConnection(connectionId, connectedAt, runtimeSessionId);
+        if (replacesAudioOwner)
+        {
+            AudioOwnerConnectionId = connectionId;
+            changed = true;
+        }
 
         if (ActiveDeviceId is null)
         {

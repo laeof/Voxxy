@@ -35,23 +35,11 @@ builder.Services.AddHealthChecks().AddCheck(
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(
         policy => policy
-            .WithOrigins(
-                builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()!
-            )
+            .AllowAnyOrigin()
             .AllowAnyHeader()
             .AllowAnyMethod()
-            .AllowCredentials()
     )
 );
-
-builder.Services.AddAntiforgery(options =>
-{
-    options.HeaderName = "X-XSRF-TOKEN";
-    options.Cookie.Name = "VOXXY-XSRF-COOKIE";
-    options.Cookie.HttpOnly = true;
-    // options.Cookie.SecurePolicy = CookieSecurePolicy.Always; //ssl required for secure cookies
-    options.Cookie.SameSite = SameSiteMode.Strict;
-});
 
 WebApplication app = builder.Build();
 
@@ -94,8 +82,6 @@ app.UseCors();
 app.UseAuthentication();
 
 app.UseAuthorization();
-
-app.UseAntiforgery();
 
 await app.RunAsync();
 

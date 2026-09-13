@@ -24,11 +24,21 @@ public sealed class RedisConnectCleanupLease(
     {
         cancellationToken.ThrowIfCancellationRequested();
         string ownerToken = Guid.NewGuid().ToString("N");
-        bool acquired = await _database.StringSetAsync(
-            ConnectRedisKeys.CleanupLease(userId),
-            ownerToken,
-            options.Ttl,
-            When.NotExists);
+        bool acquired;
+        try
+        {
+            acquired = await _database.StringSetAsync(
+                ConnectRedisKeys.CleanupLease(userId),
+                ownerToken,
+                options.Ttl,
+                When.NotExists);
+        }
+        catch (RedisException exception)
+        {
+            throw new ConnectInfrastructureUnavailableException(
+                "Connect cleanup lease storage is unavailable.",
+                exception);
+        }
         return acquired
             ? new LeaseHandle(
                 _database,

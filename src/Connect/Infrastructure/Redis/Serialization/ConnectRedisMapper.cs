@@ -60,7 +60,8 @@ internal static class ConnectRedisMapper
                     device.Connections.Select(connection =>
                             new DeviceConnectionRedisModel(
                                 connection.ConnectionId,
-                                connection.ConnectedAt))
+                                connection.ConnectedAt,
+                                connection.RuntimeSessionId))
                         .ToArray()))
                 .ToArray(),
             state.ActiveDeviceId,
@@ -74,7 +75,8 @@ internal static class ConnectRedisMapper
                 device.Name,
                 device.Connections.Select(connection => new DeviceConnection(
                     connection.ConnectionId,
-                    connection.ConnectedAt)))),
+                    connection.ConnectedAt,
+                    connection.RuntimeSessionId)))),
             model.ActiveDeviceId,
             model.AudioOwnerConnectionId,
             model.Version);

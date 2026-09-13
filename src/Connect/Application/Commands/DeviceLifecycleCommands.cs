@@ -6,7 +6,8 @@ public sealed record RegisterConnectionCommand(
     Guid DeviceId,
     string DeviceName,
     string ConnectionId,
-    DateTimeOffset ServerTime);
+    DateTimeOffset ServerTime,
+    Guid RuntimeSessionId = default);
 
 public sealed record RefreshConnectionLeaseCommand(
     Guid UserId,

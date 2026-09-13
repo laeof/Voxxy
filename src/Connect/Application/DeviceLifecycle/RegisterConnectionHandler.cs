@@ -26,6 +26,7 @@ public sealed class RegisterConnectionHandler(IConnectStateStore store)
         string fingerprint = CommandFingerprint.Create(
             CommandType,
             CommandFingerprint.GuidValue(command.DeviceId),
+            CommandFingerprint.GuidValue(command.RuntimeSessionId),
             command.DeviceName,
             command.ConnectionId);
 
@@ -49,7 +50,8 @@ public sealed class RegisterConnectionHandler(IConnectStateStore store)
                     command.DeviceId,
                     command.DeviceName,
                     command.ConnectionId,
-                    command.ServerTime);
+                    command.ServerTime,
+                    command.RuntimeSessionId);
             }
             catch (Exception exception) when (
                 exception is ArgumentException or InvalidOperationException)

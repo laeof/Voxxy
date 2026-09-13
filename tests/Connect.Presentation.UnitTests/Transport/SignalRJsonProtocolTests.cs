@@ -14,13 +14,7 @@ public sealed class SignalRJsonProtocolTests
     public void RepeatMode_IsSerializedUsingTheV2StringContract()
     {
         var services = new ServiceCollection();
-        IConfiguration configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(
-                new Dictionary<string, string?>
-                {
-                    ["Cors:AllowedOrigins:0"] = "http://localhost"
-                })
-            .Build();
+        IConfiguration configuration = new ConfigurationBuilder().Build();
         services.AddConnectModulePresentation(configuration);
         using ServiceProvider provider = services.BuildServiceProvider();
         JsonSerializerOptions options = provider

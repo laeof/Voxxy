@@ -10,15 +10,15 @@ internal static class ServiceCollectionExtensions
         {
             o.CustomSchemaIds(id => id.FullName!.Replace('+', '-'));
 
-            var cookieScheme = new OpenApiSecurityScheme
+            o.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
-                Name = "access_token",
-                In = ParameterLocation.Cookie,
-                Type = SecuritySchemeType.ApiKey,
-                Description = "Enter your authentication cookie value"
-            };
-
-            o.AddSecurityDefinition("cookieAuth", cookieScheme);
+                Name = "Authorization",
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                In = ParameterLocation.Header,
+                Description = "Enter JWT token"
+            });
 
             var securityRequirement = new OpenApiSecurityRequirement
             {
@@ -28,7 +28,7 @@ internal static class ServiceCollectionExtensions
                         Reference = new OpenApiReference
                         {
                             Type = ReferenceType.SecurityScheme,
-                            Id = "cookieAuth"
+                            Id = "Bearer"
                         }
                     },
                     Array.Empty<string>()

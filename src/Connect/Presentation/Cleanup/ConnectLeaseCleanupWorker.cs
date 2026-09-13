@@ -77,6 +77,17 @@ public sealed class ConnectLeaseCleanupWorker(
         {
             throw;
         }
+        catch (ConnectInfrastructureUnavailableException exception)
+        {
+            metrics.Failures.Add(1);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug(
+                    exception,
+                    "Connect cleanup skipped because Redis is unavailable. WorkerInstanceId={WorkerInstanceId}",
+                    _instanceId);
+            }
+        }
         catch (Exception exception)
         {
             metrics.Failures.Add(1);

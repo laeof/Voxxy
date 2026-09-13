@@ -40,7 +40,8 @@ public sealed record QueueStateRedisModel(
 
 public sealed record DeviceConnectionRedisModel(
     string ConnectionId,
-    DateTimeOffset ConnectedAt);
+    DateTimeOffset ConnectedAt,
+    Guid RuntimeSessionId = default);
 
 public sealed record DeviceRedisModel(
     Guid DeviceId,
